@@ -1,0 +1,2007 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>농구 턴제 전술 게임</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#1a1a2e;color:#eee;font-family:'Courier New',monospace;display:flex;flex-direction:column;align-items:center;min-height:100vh}
+#title-screen,#game-screen{display:none;flex-direction:column;align-items:center;width:100%;padding:20px}
+.active{display:flex!important}
+h1{font-size:2em;color:#ff7700;margin-bottom:8px;text-shadow:0 0 20px #ff770066}
+.sub{color:#aaa;margin-bottom:25px;font-size:0.9em}
+h2{font-size:1.2em;color:#ffaa44;margin-bottom:15px}
+.team-cards{display:flex;gap:12px;flex-wrap:wrap;justify-content:center;max-width:800px}
+.team-card{background:#16213e;border:2px solid #2a3a5e;border-radius:8px;padding:15px;width:175px;cursor:pointer;transition:all 0.2s}
+.team-card:hover{border-color:#ff7700;transform:translateY(-2px)}
+.team-card.selected{border-color:#ff7700;background:#1e2d50;box-shadow:0 0 12px #ff770044}
+.team-card h3{color:#ff7700;font-size:1em;margin-bottom:4px}
+.team-card .tag{display:inline-block;background:#0f3460;border-radius:3px;padding:2px 6px;font-size:0.7em;margin:3px 0;color:#88aaff}
+.team-card p{font-size:0.72em;color:#aaa;margin-top:4px;line-height:1.5}
+.btn{padding:10px 28px;background:#ff7700;border:none;border-radius:6px;color:#fff;font-family:inherit;font-size:1em;cursor:pointer;margin:5px;transition:background 0.2s}
+.btn:hover{background:#ff9922}
+.btn:disabled{opacity:0.35;cursor:not-allowed}
+.btn.sec{background:#2a3a5e}.btn.sec:hover{background:#3a4a6e}
+.btn.danger{background:#553322}.btn.danger:hover{background:#774433}
+#game-screen{flex-direction:row;align-items:flex-start;gap:10px;max-width:1060px;padding:10px}
+#court-panel{flex:1;min-width:0}
+#side-panel{width:240px;flex-shrink:0}
+canvas{border:2px solid #2a3a5e;display:block;width:100%;max-width:700px;cursor:crosshair;background:#c8760c}
+#hud{display:flex;justify-content:space-around;background:#16213e;padding:7px 5px;border-radius:6px;margin-bottom:7px;border:1px solid #2a3a5e}
+.hi{text-align:center;padding:0 4px}
+.hl{color:#666;font-size:0.68em;display:block}
+.hv{color:#ff7700;font-size:1.15em;font-weight:bold;display:block}
+#status-bar{background:#0d1a30;border-radius:5px;padding:6px 10px;font-size:0.78em;color:#aaa;margin:6px 0;border-left:3px solid #ff7700;min-height:28px}
+.panel-box{background:#16213e;border-radius:6px;padding:8px;margin-bottom:7px;border:1px solid #1e2d50}
+.panel-box h4{color:#ffaa44;font-size:0.8em;margin-bottom:7px;border-bottom:1px solid #2a3a5e;padding-bottom:4px}
+.pitem{display:flex;justify-content:space-between;align-items:center;padding:5px 6px;border-radius:4px;cursor:pointer;margin-bottom:3px;font-size:0.75em;border:1.5px solid transparent;transition:all 0.15s}
+.pitem:hover{background:#1e2d50}
+.pitem.sel{border-color:#ff7700;background:#1a2d4a}
+.pitem.planned{border-color:#ffdd0066;background:#1a1e10}
+.pdot{width:10px;height:10px;border-radius:2px;display:inline-block;margin-right:5px;flex-shrink:0}
+.ball-icon{color:#ff6600;margin-left:3px}
+.abtn{display:block;width:100%;padding:6px 8px;margin-bottom:4px;background:#0f2040;border:1px solid #1a3a60;border-radius:4px;color:#ccc;cursor:pointer;font-family:inherit;font-size:0.75em;text-align:left;transition:background 0.15s}
+.abtn:hover{background:#1a3a60;color:#fff}
+.abtn:disabled{opacity:0.3;cursor:not-allowed}
+.abtn.shoot{border-color:#ff7700;color:#ffcc88;background:#1a2a0a}
+.abtn.shoot:hover{background:#2a3a10}
+#log{background:#0a0f1a;border-radius:5px;padding:7px;height:130px;overflow-y:auto;font-size:0.71em;line-height:1.65;border:1px solid #1a2a3a}
+.lg{color:#999}.lg.good{color:#44dd77}.lg.bad{color:#ff5555}.lg.info{color:#5599ff}.lg.warn{color:#ffaa33}
+.lg.sep{color:#4466aa;border-top:1px solid #1a2a3a;margin-top:2px;padding-top:2px}
+#modal-bg{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.75);z-index:200;justify-content:center;align-items:center}
+#modal-bg.active{display:flex}
+#modal{background:#16213e;border:2px solid #ff7700;border-radius:10px;padding:28px;max-width:420px;text-align:center;box-shadow:0 0 40px #ff770033}
+#modal h2{color:#ff7700;margin-bottom:14px;font-size:1.4em}
+#modal p{margin-bottom:8px;line-height:1.7;font-size:0.9em}
+.mbig{font-size:2.2em;font-weight:bold;margin:12px 0}
+.prob-bar{background:#0a0f1a;border-radius:4px;height:8px;margin:3px 0;overflow:hidden}
+.prob-fill{height:100%;border-radius:4px}
+.zone-stats{font-size:0.7em;color:#888;line-height:1.9}
+.abtn.screen-on{border-color:#ff9900;color:#ffcc66;background:#1a1a00}
+.abtn.screen-on:hover{background:#2a2a00}
+.abtn.screen-exec{border-color:#ff6600;color:#ffaa00;background:#1e2800;font-weight:bold}
+.abtn.screen-exec:hover{background:#2e3800}
+.pitem .sm-tag{font-size:0.68em;background:#ff6600;color:#000;border-radius:2px;padding:0 3px;margin-left:3px;font-weight:bold}
+</style>
+</head>
+<body>
+
+<div id="title-screen" class="active">
+  <h1>농구 턴제 전술 게임</h1>
+  <p class="sub">지역수비를 읽고, 스크린·패스·이동을 계획해 오픈 찬스를 만들어라</p>
+  <h2>팀 선택</h2>
+  <div class="team-cards">
+    <div class="team-card" onclick="selectTeam('rng',this)">
+      <h3>런앤건</h3><span class="tag">3점 특화</span>
+      <p>빠른 템포로 외곽 슛을 퍼붓는 팀<br>강점: 외곽 슛, 스피드<br>약점: 골밑 공략</p>
+    </div>
+    <div class="team-card" onclick="selectTeam('big',this)">
+      <h3>빅맨 농구</h3><span class="tag">포스트 중심</span>
+      <p>스크린과 골밑으로 밀어붙이는 팀<br>강점: 골밑, 스크린<br>약점: 스피드</p>
+    </div>
+    <div class="team-card" onclick="selectTeam('ball',this)">
+      <h3>볼무브먼트</h3><span class="tag">패스 연결</span>
+      <p>빠른 패스로 수비를 흔드는 팀<br>강점: 패스, 스크린 효율<br>약점: 개인기</p>
+    </div>
+    <div class="team-card" onclick="selectTeam('iso',this)">
+      <h3>아이솔레이션</h3><span class="tag">에이스 원맨</span>
+      <p>에이스 하나로 모든 걸 해결하는 팀<br>강점: 드리블 돌파<br>약점: 팀플레이</p>
+    </div>
+  </div>
+  <br>
+  <button class="btn" id="start-btn" onclick="startGame()" disabled>게임 시작</button>
+</div>
+
+<div id="game-screen">
+  <div id="court-panel">
+    <div id="hud">
+      <div class="hi"><span class="hl">공격 득점</span><span class="hv" id="h-atk">0</span></div>
+      <div class="hi"><span class="hl">수비 실점</span><span class="hv" id="h-def">0</span></div>
+      <div class="hi"><span class="hl">최종</span><span class="hv" id="h-tot">0</span></div>
+      <div class="hi"><span class="hl">포제션</span><span class="hv" id="h-pos">1/5</span></div>
+      <div class="hi"><span class="hl">샷클락</span><span class="hv" id="h-sc">10</span></div>
+      <div class="hi"><span class="hl">수비 대형</span><span class="hv" id="h-form" style="font-size:0.75em">-</span></div>
+    </div>
+    <canvas id="court" width="700" height="490"></canvas>
+    <div id="status-bar">팀을 선택하고 시작하세요</div>
+    <div style="display:flex;gap:5px;margin-top:5px">
+      <button class="btn" id="btn-exec" onclick="executeTurn()" disabled>▶ 턴 실행</button>
+      <button class="btn danger" id="btn-clear" onclick="clearPlans()" disabled>✕ 계획 초기화</button>
+    </div>
+  </div>
+  <div id="side-panel">
+    <div class="panel-box" id="player-list"><h4>공격 선수</h4></div>
+    <div class="panel-box">
+      <h4>액션 선택</h4>
+      <div id="action-btns"><p style="color:#444;font-size:0.75em">선수를 선택하세요</p></div>
+    </div>
+    <div class="panel-box">
+      <h4>정보</h4>
+      <div id="zone-info" class="zone-stats">존이나 선수를 클릭하세요</div>
+    </div>
+    <div id="log"></div>
+  </div>
+</div>
+
+
+<div id="modal-bg">
+  <div id="modal">
+    <h2 id="m-title"></h2>
+    <div id="m-body"></div>
+    <div style="margin-top:18px"><button class="btn" id="m-btn">확인</button></div>
+  </div>
+</div>
+
+<script>
+'use strict';
+// ═══════════════════════════════════════════════════════
+// COURT GEOMETRY  (FIBA, scale=33px/m, 바스켓 하단)
+// ═══════════════════════════════════════════════════════
+const S=33, CW=700, CH=490;
+const LS=103, RS=597, EL_Y=472, HC_Y=15, MID_X=350;
+const BX=MID_X, BY=EL_Y-Math.round(1.575*S); // 420
+const PAINT_HW=Math.round(4.90/2*S); // 81
+const PAINT_PL=MID_X-PAINT_HW, PAINT_PR=MID_X+PAINT_HW; // 269,431
+const FT_Y=EL_Y-Math.round(5.80*S); // 281
+const FT_R=Math.round(1.80*S); // 59
+const RA_R=Math.round(1.25*S); // 41
+const ARC_R=Math.round(6.75*S); // 223
+const COR_X=Math.round(0.90*S); // 30
+const ARC_LX=LS+COR_X, ARC_RX=RS-COR_X; // 133,567
+const _dy=Math.round(Math.sqrt(ARC_R*ARC_R-(ARC_LX-BX)*(ARC_LX-BX)));
+const ARC_JY=BY-_dy; // 369
+const _angR=Math.atan2(ARC_JY-BY,ARC_RX-BX);
+const _angL=Math.atan2(ARC_JY-BY,ARC_LX-BX);
+
+// ═══════════════════════════════════════════════════════
+// ZONES
+// ═══════════════════════════════════════════════════════
+const Z={
+  GM: {id:'GM', name:'골밑',        type:'layup',x:MID_X,   y:EL_Y-27},
+  PT: {id:'PT', name:'페인트',       type:'paint',x:MID_X,   y:355},
+  EL: {id:'EL', name:'엘보 좌',      type:'mid',  x:PAINT_PL,y:FT_Y},
+  ER: {id:'ER', name:'엘보 우',      type:'mid',  x:PAINT_PR,y:FT_Y},
+  ML: {id:'ML', name:'미드레인지 좌', type:'mid',  x:200,     y:330},
+  MR: {id:'MR', name:'미드레인지 우', type:'mid',  x:500,     y:330},
+  T3: {id:'T3', name:'탑3',         type:'3pt',  x:MID_X,   y:BY-ARC_R},
+  W3L:{id:'W3L',name:'윙3 좌',       type:'3pt',  x:191,     y:263},
+  W3R:{id:'W3R',name:'윙3 우',       type:'3pt',  x:509,     y:263},
+  C3L:{id:'C3L',name:'코너3 좌',     type:'3pt',  x:118,     y:BY},
+  C3R:{id:'C3R',name:'코너3 우',     type:'3pt',  x:582,     y:BY},
+  SC3L:{id:'SC3L',name:'숏코너 좌',  type:'mid',  x:150,     y:390},
+  SC3R:{id:'SC3R',name:'숏코너 우',  type:'mid',  x:550,     y:390},
+};
+const ADJ={
+  GM:['PT'],PT:['GM','EL','ER'],
+  EL:['PT','ML','T3','W3L'],ER:['PT','MR','T3','W3R'],
+  ML:['EL','W3L','C3L','SC3L'],MR:['ER','W3R','C3R','SC3R'],
+  T3:['EL','ER','W3L','W3R'],
+  W3L:['T3','ML','C3L','EL'],W3R:['T3','MR','C3R','ER'],
+  C3L:['W3L','ML','SC3L'],C3R:['W3R','MR','SC3R'],
+  SC3L:['C3L','ML','PT','GM'],SC3R:['C3R','MR','PT','GM'],
+};
+const SP={
+  layup:{open:98,space:88,contest:78,tight:63,block:48},
+  paint:{open:84,space:72,contest:60,tight:48,block:32},
+  mid:  {open:70,space:60,contest:50,tight:38,block:25},
+  '3pt':{open:55,space:45,contest:35,tight:25,block:15},
+};
+const FORMS={
+  '2-3': {name:'2-3 존',   weak:['C3L','C3R','W3L','W3R','SC3L','SC3R'],pos:['W3L','W3R','ML','MR','PT']},
+  '3-2': {name:'3-2 존',   weak:['GM','PT','C3L','C3R'],  pos:['T3','W3L','W3R','EL','ER']},
+  '1-3-1':{name:'1-3-1 존',weak:['C3L','C3R'],            pos:['T3','W3L','W3R','PT','GM']},
+  '2-1-2':{name:'2-1-2 존',weak:[],                       pos:['EL','ER','PT','ML','MR']},
+  'man':  {name:'맨투맨',   weak:['백도어컷','오프볼컷','스크린앤롤'],pos:['T3','W3L','W3R','EL','ER'],isMan:true},
+};
+const FKEYS=Object.keys(FORMS);
+const FORM_ROLES={
+  '2-3': ['guardL','guardR','forwardL','forwardR','center'],
+  '3-2': ['rover','wingL','wingR','postL','postR'],
+  '1-3-1':['chaser','wingL','wingR','center','warrior'],
+  '2-1-2':['guardL','guardR','middle','postL','postR'],
+  'man':  ['guardL','guardR','forwardL','forwardR','center'],
+};
+const roleDisplay={
+  guardL:'PG',guardR:'SG',forwardL:'SF',forwardR:'PF',center:'C',
+  rover:'SF',wingL:'PG',wingR:'SG',postL:'PF',postR:'C',
+  chaser:'PG',warrior:'SG',middle:'SF',
+};
+const TEAMS={
+  rng:{name:'런앤건',players:[
+    {name:'PG',pos:'PG',spd:9,hnd:8,pas:7,scr:4,sht:6,color:'#FF6B35'},
+    {name:'슈터',pos:'SG',spd:7,hnd:5,pas:6,scr:4,sht:10,color:'#FF9255'},
+    {name:'SF',pos:'SF',spd:7,hnd:6,pas:6,scr:5,sht:7,color:'#FFB070'},
+    {name:'코너',pos:'PF',spd:6,hnd:4,pas:5,scr:6,sht:8,color:'#FFC885'},
+    {name:'빅',pos:'C',spd:4,hnd:3,pas:4,scr:7,sht:7,color:'#FFDAA0'},
+  ]},
+  big:{name:'빅맨농구',players:[
+    {name:'PG',pos:'PG',spd:7,hnd:7,pas:8,scr:5,sht:5,color:'#4ECDC4'},
+    {name:'SG',pos:'SG',spd:6,hnd:6,pas:6,scr:5,sht:7,color:'#6EE0D8'},
+    {name:'SF',pos:'SF',spd:6,hnd:5,pas:6,scr:7,sht:6,color:'#8EF0EB'},
+    {name:'파워',pos:'PF',spd:5,hnd:4,pas:5,scr:9,sht:7,color:'#AAEEEB'},
+    {name:'돔',pos:'C',spd:3,hnd:3,pas:4,scr:10,sht:9,color:'#C0F8F4'},
+  ]},
+  ball:{name:'볼무브',players:[
+    {name:'PG',pos:'PG',spd:8,hnd:8,pas:10,scr:5,sht:5,color:'#A8E063'},
+    {name:'패서',pos:'SG',spd:7,hnd:6,pas:8,scr:6,sht:6,color:'#BCEB7E'},
+    {name:'SF',pos:'SF',spd:7,hnd:6,pas:7,scr:7,sht:7,color:'#CCF09A'},
+    {name:'스크리너',pos:'PF',spd:5,hnd:4,pas:6,scr:9,sht:6,color:'#DAF5B5'},
+    {name:'앵커',pos:'C',spd:4,hnd:3,pas:5,scr:10,sht:8,color:'#E8F8CC'},
+  ]},
+  iso:{name:'아이솔',players:[
+    {name:'에이스',pos:'SG',spd:8,hnd:10,pas:6,scr:5,sht:9,color:'#E056A8'},
+    {name:'PG',pos:'PG',spd:8,hnd:7,pas:7,scr:4,sht:5,color:'#E878BE'},
+    {name:'스팟업',pos:'SF',spd:6,hnd:5,pas:5,scr:5,sht:8,color:'#EE99CF'},
+    {name:'PF',pos:'PF',spd:5,hnd:4,pas:5,scr:7,sht:6,color:'#F3B5DA'},
+    {name:'빅',pos:'C',spd:3,hnd:3,pas:4,scr:8,sht:8,color:'#F8CEE7'},
+  ]},
+};
+const ATKS=['T3','W3L','W3R','EL','ER'];
+
+// ═══════════════════════════════════════════════════════
+// GAME STATE
+// ═══════════════════════════════════════════════════════
+let G={
+  phase:'TITLE',   // 'TITLE'|'PLAN'|'EXEC'
+  teamKey:null,
+  atkScore:0,defScore:0,poss:1,sc:10,
+  formation:'2-3',
+  atk:[],def:[],
+  // Planning
+  selIdx:null,
+  awaitMove:false,awaitPass:false,awaitScreen:false,awaitDribble:false,
+  passIsBounce:false,
+  actionQueue:[],          // [{type,playerIdx,...params}] — ordered by plan order
+  playerActions:{},        // {playerIdx: {type,label,...}} for UI/draw
+  virtBall:0,              // who "will" have ball in current plan
+  shootPlanned:false,
+  // Visual (animation)
+  atkVis:[],defVis:[],
+  ballVis:{x:0,y:0},showBall:false,showPassLine:false,passLine:null,
+  // Modifiers
+  fakeCount:0,shotHist:{},screenBonus:false,cutBonus:false,screenCount:0,screenFlash:null,manScreenHistory:0,activeScreenZones:[],passReactFrac:1.0,dribbleFailPenalty:false,mismatchBonus:0,
+};
+
+// ═══════════════════════════════════════════════════════
+// ANIMATION ENGINE
+// ═══════════════════════════════════════════════════════
+let _raf=null;
+function lerp(a,b,t){return a+(b-a)*t}
+function lerpP(a,b,t){return{x:lerp(a.x,b.x,t),y:lerp(a.y,b.y,t)}}
+function easeIO(t){return t<0.5?2*t*t:-1+(4-2*t)*t}
+
+function anim(ms,onFrame,onDone){
+  if(_raf){cancelAnimationFrame(_raf);_raf=null}
+  const t0=performance.now();
+  function tick(now){
+    const raw=Math.min(1,(now-t0)/ms);
+    onFrame(easeIO(raw),raw);
+    draw();
+    if(raw<1){_raf=requestAnimationFrame(tick)}
+    else{_raf=null;if(onDone)setTimeout(onDone,0)}
+  }
+  _raf=requestAnimationFrame(tick);
+}
+
+// ═══════════════════════════════════════════════════════
+// CANVAS + DRAW
+// ═══════════════════════════════════════════════════════
+const cv=document.getElementById('court');
+const ct=cv.getContext('2d');
+
+function drawCourt(){
+  ct.clearRect(0,0,CW,CH);
+  ct.fillStyle='#b8681d';ct.fillRect(LS,HC_Y,RS-LS,EL_Y-HC_Y);
+  ct.fillStyle='#a85c18';
+  ct.fillRect(PAINT_PL,FT_Y,PAINT_PR-PAINT_PL,EL_Y-FT_Y);
+  // Lines
+  ct.strokeStyle='#fff';ct.lineWidth=2.5;
+  ct.beginPath();ct.moveTo(LS,HC_Y);ct.lineTo(LS,EL_Y);ct.moveTo(RS,HC_Y);ct.lineTo(RS,EL_Y);ct.stroke();
+  ct.beginPath();ct.moveTo(LS,EL_Y);ct.lineTo(RS,EL_Y);ct.stroke();
+  ct.beginPath();ct.moveTo(LS,HC_Y);ct.lineTo(RS,HC_Y);ct.stroke();
+  ct.beginPath();ct.arc(MID_X,HC_Y,FT_R,0,Math.PI,false);ct.stroke();
+  ct.lineWidth=2;ct.strokeRect(PAINT_PL,FT_Y,PAINT_PR-PAINT_PL,EL_Y-FT_Y);
+  ct.beginPath();ct.moveTo(PAINT_PL,FT_Y);ct.lineTo(PAINT_PR,FT_Y);ct.stroke();
+  // FT circle
+  ct.beginPath();ct.arc(MID_X,FT_Y,FT_R,0,Math.PI,false);ct.stroke();
+  ct.setLineDash([5,5]);ct.beginPath();ct.arc(MID_X,FT_Y,FT_R,Math.PI,Math.PI*2,false);ct.stroke();ct.setLineDash([]);
+  // Restricted area
+  ct.lineWidth=1.5;ct.beginPath();ct.arc(BX,BY,RA_R,Math.PI,0,true);ct.stroke();
+  // 3pt line
+  ct.lineWidth=2.5;
+  ct.beginPath();ct.moveTo(ARC_LX,EL_Y);ct.lineTo(ARC_LX,ARC_JY);ct.stroke();
+  ct.beginPath();ct.moveTo(ARC_RX,EL_Y);ct.lineTo(ARC_RX,ARC_JY);ct.stroke();
+  ct.beginPath();ct.arc(BX,BY,ARC_R,_angR,_angL,true);ct.stroke();
+  // Backboard + rim
+  ct.fillStyle='#eee';ct.fillRect(BX-27,EL_Y-6,54,5);
+  ct.strokeStyle='#ff4400';ct.lineWidth=3;ct.beginPath();ct.arc(BX,BY,17,0,Math.PI*2);ct.stroke();
+  ct.fillStyle='#ff4400';ct.beginPath();ct.arc(BX,BY,2,0,Math.PI*2);ct.fill();
+  // Labels
+  ct.fillStyle='rgba(255,255,255,0.28)';ct.font='10px Courier New';ct.textAlign='center';
+  ct.fillText('▲ 하프라인',MID_X,HC_Y+12);
+}
+
+function drawZoneLabels(){
+  ct.font='9px Courier New';ct.textAlign='center';
+  for(const zid in Z){
+    const z=Z[zid];
+    ct.fillStyle='rgba(255,255,255,0.38)';
+    ct.fillText(z.name,z.x,z.y+20);
+  }
+}
+
+// Plan-phase: draw planned action arrows on court
+function drawPlanArrows(){
+  Object.entries(G.playerActions).forEach(([idx,action])=>{
+    const i=parseInt(idx);
+    const p=G.atk[i];
+    const px=p.px, py=p.py;
+    ct.fillStyle='rgba(255,220,0,0.85)';
+    ct.font='bold 8px Courier New';ct.textAlign='center';
+    const lbl=action.label;
+    const lw=ct.measureText(lbl).width+6;
+    ct.fillRect(px-lw/2,py-26,lw,13);
+    ct.fillStyle='#000';ct.fillText(lbl,px,py-16);
+    if(action.type==='move'||action.type==='dribble'){
+      drawDashedArrow(px,py,action.tx,action.ty,'rgba(100,255,150,0.7)');
+    }
+    if(action.type==='pass'){
+      const tp=G.atk[action.toPlayerIdx];
+      drawDashedArrow(px,py,tp.px,tp.py,'rgba(80,180,255,0.7)');
+    }
+    if(action.type==='shoot'){
+      drawDashedArrow(px,py,BX,BY,'rgba(255,120,0,0.7)');
+    }
+    if(action.type==='screen'){
+      ct.strokeStyle='rgba(255,136,0,0.85)';ct.lineWidth=2;ct.setLineDash([3,3]);
+      ct.beginPath();ct.arc(px,py,20,0,Math.PI*2);ct.stroke();
+      ct.setLineDash([]);
+      ct.fillStyle='rgba(255,136,0,0.8)';ct.font='bold 8px Courier New';ct.textAlign='center';
+      ct.fillText('SCR',px,py+28);
+    }
+    if(action.type==='movescreen'){
+      drawDashedArrow(px,py,action.tx,action.ty,'rgba(255,136,0,0.7)');
+      ct.strokeStyle='rgba(255,136,0,0.85)';ct.lineWidth=2;ct.setLineDash([3,3]);
+      ct.beginPath();ct.arc(action.tx,action.ty,20,0,Math.PI*2);ct.stroke();
+      ct.setLineDash([]);
+      ct.fillStyle='rgba(255,136,0,0.8)';ct.font='bold 8px Courier New';ct.textAlign='center';
+      ct.fillText('SCR',action.tx,action.ty+28);
+    }
+  });
+}
+
+function drawDashedArrow(x1,y1,x2,y2,color){
+  const angle=Math.atan2(y2-y1,x2-x1);
+  ct.strokeStyle=color;ct.lineWidth=1.8;ct.setLineDash([5,4]);
+  ct.beginPath();ct.moveTo(x1,y1);ct.lineTo(x2,y2);ct.stroke();
+  ct.setLineDash([]);
+  ct.fillStyle=color;ct.beginPath();
+  const s=8;
+  ct.moveTo(x2,y2);
+  ct.lineTo(x2-s*Math.cos(angle-0.42),y2-s*Math.sin(angle-0.42));
+  ct.lineTo(x2-s*Math.cos(angle+0.42),y2-s*Math.sin(angle+0.42));
+  ct.closePath();ct.fill();
+}
+
+function drawTargetHighlights(){
+  if(G.selIdx===null)return;
+  const atk=G.atk[G.selIdx];
+  const ppx=atk.px, ppy=atk.py;
+  if(G.awaitMove){
+    const hasBallNow=(G.selIdx===G.virtBall);
+    const r=hasBallNow?ballCarrierMoveRange(atk.spd):spdToRange(atk.spd);
+    const clr=hasBallNow?'30,144,255':'0,238,85';
+    ct.fillStyle=`rgba(${clr},0.09)`;ct.strokeStyle=`rgba(${clr},0.6)`;ct.lineWidth=1.8;
+    ct.beginPath();ct.arc(ppx,ppy,r,0,Math.PI*2);ct.fill();ct.stroke();
+    ct.fillStyle=`rgba(${clr},0.82)`;ct.font='9px Courier New';ct.textAlign='center';
+    ct.fillText('클릭하여 이동',ppx,ppy-r-6);
+  }
+  if(G.awaitDribble){
+    const r=hndToRange(atk.hnd);
+    ct.fillStyle='rgba(255,136,0,0.09)';ct.strokeStyle='rgba(255,136,0,0.6)';ct.lineWidth=1.8;
+    ct.beginPath();ct.arc(ppx,ppy,r,0,Math.PI*2);ct.fill();ct.stroke();
+    ct.fillStyle='rgba(255,136,0,0.75)';ct.font='9px Courier New';ct.textAlign='center';
+    ct.fillText('클릭하여 돌파',ppx,ppy-r-6);
+  }
+  if(G.awaitPass){
+    const passer=G.atk[G.selIdx];
+    G.atk.forEach((p2,i2)=>{
+      if(i2===G.selIdx)return;
+      // 패스 라인 위 수비수 체크 → 위험도 표시
+      const x1=passer.px,y1=passer.py,x2=p2.px,y2=p2.py;
+      const dx=x2-x1,dy=y2-y1,len=Math.hypot(dx,dy);
+      let risk=false;
+      if(len>0.01){
+        G.def.forEach((_,di)=>{
+          const dv=G.defVis[di]||defRenderPos(di);
+          const t=Math.max(0,Math.min(1,((dv.x-x1)*dx+(dv.y-y1)*dy)/(len*len)));
+          const cx=x1+t*dx,cy=y1+t*dy;
+          if(Math.hypot(dv.x-cx,dv.y-cy)<32)risk=true;
+        });
+      }
+      // 패스 라인 점선
+      ct.strokeStyle=risk?'rgba(255,80,0,0.55)':G.passIsBounce?'rgba(255,180,60,0.5)':'rgba(80,200,255,0.45)';
+      ct.lineWidth=1.5;ct.setLineDash([6,4]);
+      ct.beginPath();ct.moveTo(x1,y1);ct.lineTo(x2,y2);ct.stroke();
+      ct.setLineDash([]);
+      // 수신자 원
+      ct.fillStyle=risk?'rgba(255,80,0,0.15)':'rgba(0,150,255,0.18)';
+      ct.strokeStyle=risk?'#ff5000':G.passIsBounce?'#ffb400':'#0099ff';
+      ct.lineWidth=2;
+      ct.beginPath();ct.arc(p2.px,p2.py,22,0,Math.PI*2);ct.fill();ct.stroke();
+      if(risk){
+        ct.fillStyle='rgba(255,80,0,0.9)';ct.font='bold 10px Courier New';ct.textAlign='center';
+        ct.fillText('⚠',p2.px,p2.py-28);
+      }
+    });
+  }
+}
+
+function _drawDefSquare(pos,d,i){
+  const{x,y}=pos;
+  const full=d.screenedFull;
+  ct.fillStyle=full?'#2a2a2a':d.screened?'#2a3a5a':'#1a3a8a';
+  ct.strokeStyle=full?'#555555':d.screened?'#6677bb':'#4488cc';ct.lineWidth=1.5;
+  ct.fillRect(x-9,y-9,18,18);ct.strokeRect(x-9,y-9,18,18);
+  ct.fillStyle=full?'#777777':d.screened?'#8899cc':'#aaccff';ct.font='bold 8px Courier New';ct.textAlign='center';
+  ct.fillText(roleDisplay[d.role]||'D'+(i+1),x,y+3);
+  if(full){
+    ct.strokeStyle='#888888';ct.lineWidth=2.5;
+    ct.beginPath();ct.moveTo(x-6,y-6);ct.lineTo(x+6,y+6);ct.moveTo(x+6,y-6);ct.lineTo(x-6,y+6);ct.stroke();
+  } else if(d.screened){
+    ct.strokeStyle='#ff8800';ct.lineWidth=1.2;
+    ct.beginPath();ct.moveTo(x-5,y-5);ct.lineTo(x+5,y+5);ct.moveTo(x+5,y-5);ct.lineTo(x-5,y+5);ct.stroke();
+  }
+}
+function _drawAtkCircle(pos,p,i,sel,planned){
+  const{x,y}=pos;
+  if(sel){ct.fillStyle='rgba(255,220,0,0.2)';ct.beginPath();ct.arc(x,y,20,0,Math.PI*2);ct.fill();}
+  // 스크린 모드 ON: 주황 외곽 링
+  if(p.screenMode){
+    ct.strokeStyle='#ff8800';ct.lineWidth=3;
+    ct.beginPath();ct.arc(x,y,16,0,Math.PI*2);ct.stroke();
+  }
+  ct.fillStyle=p.color;
+  ct.strokeStyle=sel?'#ffff00':p.screenMode?'#ff9900':'rgba(255,255,255,0.6)';ct.lineWidth=sel?2.5:1.5;
+  ct.beginPath();ct.arc(x,y,13,0,Math.PI*2);ct.fill();ct.stroke();
+  ct.fillStyle='#000';ct.font='bold 7px Courier New';ct.textAlign='center';
+  ct.fillText(p.pos,x,y+2.5);
+  if(p.hasBall){
+    ct.fillStyle='#ff6600';ct.strokeStyle='#fff';ct.lineWidth=0.8;
+    ct.beginPath();ct.arc(x+11,y-11,5,0,Math.PI*2);ct.fill();ct.stroke();
+  }
+  if(planned){
+    ct.strokeStyle='#ffdd0088';ct.lineWidth=1.5;ct.setLineDash([2,2]);
+    ct.beginPath();ct.arc(x,y,16,0,Math.PI*2);ct.stroke();ct.setLineDash([]);
+  }
+}
+
+// 계획 단계: 수비수는 골대 방면, 공격수는 실제 px,py
+function drawDefenders(){
+  const rawPos=G.def.map((_,i)=>defRenderPos(i));
+  const sep=separateForDraw(rawPos,22);
+  G.def.forEach((d,i)=>_drawDefSquare(sep[i],d,i));
+}
+function drawAttackers(){
+  const rawPos=G.atk.map(p=>({x:p.px,y:p.py}));
+  const allPos=[...G.def.map((_,i)=>defRenderPos(i)),...rawPos];
+  const sep=separateForDraw(allPos,22);
+  const atkSep=sep.slice(G.def.length);
+  G.atk.forEach((p,i)=>_drawAtkCircle(atkSep[i],p,i,G.selIdx===i,!!G.playerActions[i]));
+}
+
+// 실행 단계: G.defVis / G.atkVis 는 이미 goal-side + offset 포함 위치
+function drawDefVis(){
+  const sep=separateForDraw(G.defVis,22);
+  G.def.forEach((d,i)=>_drawDefSquare(sep[i],d,i));
+}
+function drawAtkVis(){
+  const allPos=[...G.defVis,...G.atkVis];
+  const sep=separateForDraw(allPos,22);
+  const atkSep=sep.slice(G.defVis.length);
+  G.atk.forEach((p,i)=>{
+    const pos=atkSep[i];
+    ct.fillStyle=p.color;ct.strokeStyle='rgba(255,255,255,0.6)';ct.lineWidth=1.5;
+    ct.beginPath();ct.arc(pos.x,pos.y,13,0,Math.PI*2);ct.fill();ct.stroke();
+    ct.fillStyle='#000';ct.font='bold 7px Courier New';ct.textAlign='center';
+    ct.fillText(p.pos,pos.x,pos.y+2.5);
+    if(p.hasBall&&!G.showBall){
+      ct.fillStyle='#ff6600';ct.strokeStyle='#fff';ct.lineWidth=0.8;
+      ct.beginPath();ct.arc(pos.x+11,pos.y-11,5,0,Math.PI*2);ct.fill();ct.stroke();
+    }
+  });
+}
+
+function drawPassLine(){
+  if(!G.showPassLine||!G.passLine)return;
+  const{x1,y1,x2,y2,bounce}=G.passLine;
+  ct.strokeStyle=bounce?'rgba(255,180,60,0.85)':'rgba(80,210,255,0.85)';
+  ct.lineWidth=bounce?1.8:2.2;
+  ct.setLineDash(bounce?[5,4]:[8,4]);
+  ct.beginPath();ct.moveTo(x1,y1);ct.lineTo(x2,y2);ct.stroke();
+  ct.setLineDash([]);
+  if(bounce){
+    const mx=(x1+x2)/2,my=(y1+y2)/2;
+    ct.fillStyle='rgba(255,180,60,0.9)';
+    ct.beginPath();ct.arc(mx,my,4,0,Math.PI*2);ct.fill();
+  }
+}
+
+function drawBallVis(){
+  if(!G.showBall)return;
+  ct.fillStyle='#ff6600';ct.strokeStyle='#fff';ct.lineWidth=1.2;
+  ct.beginPath();ct.arc(G.ballVis.x,G.ballVis.y,7,0,Math.PI*2);ct.fill();ct.stroke();
+  // seams
+  ct.strokeStyle='#cc4400';ct.lineWidth=0.8;
+  ct.beginPath();ct.arc(G.ballVis.x,G.ballVis.y,7,-0.5,0.5);ct.stroke();
+  ct.beginPath();ct.arc(G.ballVis.x,G.ballVis.y,7,Math.PI-0.5,Math.PI+0.5);ct.stroke();
+}
+
+// ── 스크린 존 유틸 ──────────────────────────────────────
+function getScreenZones(){
+  const z=[...G.activeScreenZones];
+  G.atk.forEach(p=>{if(p.screenMode)z.push({x:p.px,y:p.py,r:40});});
+  return z;
+}
+// 선분 A→B 에서 점 C 까지의 최소 거리
+function segCircleDist(ax,ay,bx,by,cx,cy){
+  const dx=bx-ax,dy=by-ay,len2=dx*dx+dy*dy;
+  if(len2<0.001)return Math.hypot(ax-cx,ay-cy);
+  const t=Math.max(0,Math.min(1,((cx-ax)*dx+(cy-ay)*dy)/len2));
+  return Math.hypot(ax+t*dx-cx,ay+t*dy-cy);
+}
+// 수비의 이동 경로(fx,fy→tx,ty)가 스크린 존과 교차하면 목적지를 수정
+function applyScreenZones(fx,fy,tx,ty,zones){
+  let ox=tx,oy=ty;
+  for(const z of zones){
+    const d=segCircleDist(fx,fy,ox,oy,z.x,z.y);
+    if(d>=z.r)continue;
+    const moveLen=Math.hypot(ox-fx,oy-fy);
+    if(moveLen<1)continue;
+    const mdx=(ox-fx)/moveLen,mdy=(oy-fy)/moveLen;
+    // 수비→스크리너 방향
+    const sdx=z.x-fx,sdy=z.y-fy;
+    const sdLen=Math.hypot(sdx,sdy)||1;
+    // 이동 방향과 스크리너 방향의 일치도 (1=정면 충돌)
+    const dot=mdx*(sdx/sdLen)+mdy*(sdy/sdLen);
+    // 이동 방향의 왼쪽 수직 벡터
+    const px=-mdy,py=mdx;
+    // 스크리너가 이동선 기준 어느 쪽인가 (cross product)
+    const cross=mdx*sdy-mdy*sdx;
+    const side=cross>0?-1:1; // 스크리너 반대 방향으로 밀어냄
+    const overlap=z.r-d+8;
+    if(dot>0.60&&d<z.r*0.45){
+      // 정면 충돌: 거의 이동 불가
+      ox=lerp(fx,ox,0.14);
+      oy=lerp(fy,oy,0.14);
+    }else{
+      // 측면/사각: 우회 경로
+      ox+=px*overlap*side*1.35;
+      oy+=py*overlap*side*1.35;
+    }
+  }
+  return{tx:ox,ty:oy};
+}
+
+function drawScreenZones(){
+  // activeScreenZones: 이미 실행된 스크린 위치
+  G.activeScreenZones.forEach(z=>{
+    ct.fillStyle='rgba(255,136,0,0.10)';
+    ct.strokeStyle='rgba(255,136,0,0.50)';
+    ct.lineWidth=1.5;ct.setLineDash([5,4]);
+    ct.beginPath();ct.arc(z.x,z.y,z.r,0,Math.PI*2);ct.fill();ct.stroke();
+    ct.setLineDash([]);
+  });
+  // 스크린 모드 ON 중인 공격수: EXEC 단계는 atkVis 기준
+  G.atk.forEach((p,i)=>{
+    if(!p.screenMode)return;
+    const pos=G.phase==='EXEC'?G.atkVis[i]:{x:p.px,y:p.py};
+    ct.fillStyle='rgba(255,200,0,0.08)';
+    ct.strokeStyle='rgba(255,200,0,0.48)';
+    ct.lineWidth=1.5;ct.setLineDash([5,4]);
+    ct.beginPath();ct.arc(pos.x,pos.y,40,0,Math.PI*2);ct.fill();ct.stroke();
+    ct.setLineDash([]);
+  });
+}
+
+function drawManMarkLines(){
+  if(G.formation!=='man')return;
+  G.def.forEach((d,i)=>{
+    if(d.manMarkIdx===null||d.manMarkIdx===undefined)return;
+    const mark=G.atk[d.manMarkIdx];
+    let dx,dy,mx,my;
+    if(G.phase==='EXEC'){
+      dx=G.defVis[i]?G.defVis[i].x:defRenderPos(i).x;
+      dy=G.defVis[i]?G.defVis[i].y:defRenderPos(i).y;
+      mx=G.atkVis[d.manMarkIdx]?G.atkVis[d.manMarkIdx].x:mark.px;
+      my=G.atkVis[d.manMarkIdx]?G.atkVis[d.manMarkIdx].y:mark.py;
+    }else{
+      const drp=defRenderPos(i);
+      dx=drp.x;dy=drp.y;mx=mark.px;my=mark.py;
+    }
+    ct.strokeStyle=mark.color+'88';
+    ct.lineWidth=1;ct.setLineDash([3,4]);
+    ct.beginPath();ct.moveTo(dx,dy);ct.lineTo(mx,my);ct.stroke();
+    ct.setLineDash([]);
+  });
+}
+
+function drawScreenFlash(){
+  if(!G.screenFlash)return;
+  const{x,y,alpha}=G.screenFlash;
+  if(alpha<=0)return;
+  ct.globalAlpha=alpha;
+  ct.fillStyle='rgba(255,255,200,0.9)';
+  ct.beginPath();ct.arc(x,y,12*alpha,0,Math.PI*2);ct.fill();
+  ct.fillStyle=`rgba(255,160,0,${alpha*0.55})`;
+  ct.beginPath();ct.arc(x,y,22*alpha,0,Math.PI*2);ct.fill();
+  ct.globalAlpha=1;
+}
+
+function draw(){
+  drawCourt();
+  drawZoneLabels();
+  if(G.phase==='EXEC'){
+    drawManMarkLines();
+    drawScreenZones();
+    drawDefVis();
+    drawAtkVis();
+    drawPassLine();
+    drawBallVis();
+    drawScreenFlash();
+  } else {
+    drawPlanArrows();
+    drawTargetHighlights();
+    drawManMarkLines();
+    drawScreenZones();
+    drawDefenders();
+    drawAttackers();
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+// UTILS
+// ═══════════════════════════════════════════════════════
+function zoneDist(a,b){
+  if(a===b)return 0;
+  const vis=new Set([a]);let front=[a],d=0;
+  while(front.length){d++;const nx=[];
+    for(const z of front)for(const nb of(ADJ[z]||[])){if(nb===b)return d;if(!vis.has(nb)){vis.add(nb);nx.push(nb);}}
+    front=nx;if(d>8)return 8;}return 8;
+}
+function stepToward(from,to){
+  if(from===to)return from;
+  let bd=zoneDist(from,to),best=from;
+  for(const nb of(ADJ[from]||[])){const d=zoneDist(nb,to);if(d<bd){bd=d;best=nb;}}
+  return best;
+}
+// 패스 라인 기반 차단 판정
+// passerVis/receiverVis: {x,y} 시각 위치, isBounce: boolean
+// 반환: {intercepted:false} 또는 {intercepted:true, defIdx, interceptPoint:{x,y}, chance}
+function tryInterceptLine(passerVis,receiverVis,isBounce,passerPx,passerPy){
+  const x1=passerVis.x,y1=passerVis.y;
+  const x2=receiverVis.x,y2=receiverVis.y;
+  const dx=x2-x1,dy=y2-y1;
+  const lineLen=Math.hypot(dx,dy);
+  if(lineLen<1)return{intercepted:false};
+
+  // 패서 압박 보정 (패서 근처 수비 → 부정확한 패스)
+  const pd=nearestDefPixelDist(passerPx,passerPy);
+  const pressureMod=pd<30?1.5:pd<60?1.2:1.0;
+
+  // 롱패스 보정
+  const longMod=lineLen>200?1.35:lineLen>130?1.15:1.0;
+
+  // 바운스패스 보정 (차단 어려움)
+  const bounceMod=isBounce?0.50:1.0;
+
+  const ARM=32; // 패스 라인으로부터 차단 가능 거리(px)
+
+  let bestChance=0,bestI=-1,bestIP=null;
+
+  G.def.forEach((d,i)=>{
+    if(d.screened)return;
+    const dv=G.defVis[i]||defRenderPos(i);
+
+    // 수비 위치를 패스 라인에 사영(projection)
+    const t=Math.max(0.04,Math.min(0.96,((dv.x-x1)*dx+(dv.y-y1)*dy)/(lineLen*lineLen)));
+    const cx=x1+t*dx,cy=y1+t*dy;
+    const perpDist=Math.hypot(dv.x-cx,dv.y-cy);
+
+    if(perpDist>ARM)return;
+
+    // 수직 거리: 가까울수록 확률 높음
+    const perpFactor=1-(perpDist/ARM);
+    // 위치 인자: 중앙(t=0.5) 최대, 양 끝 최소
+    const posFactor=0.35+0.65*(1-Math.abs(t-0.5)*2);
+
+    let chance=perpFactor*posFactor*pressureMod*longMod*bounceMod;
+    chance=Math.min(0.88,Math.max(0,chance));
+
+    if(chance>bestChance){
+      bestChance=chance;bestI=i;
+      bestIP={x:cx,y:cy}; // 라인 위 교점
+    }
+  });
+
+  if(bestI<0||Math.random()>bestChance)return{intercepted:false};
+  return{intercepted:true,defIdx:bestI,interceptPoint:bestIP,chance:bestChance};
+}
+
+// 픽셀 좌표 → 가장 가까운 존 ID
+function posToZone(x,y){
+  let best=null,bd=Infinity;
+  for(const zid in Z){const z=Z[zid];const d=Math.hypot(x-z.x,y-z.y);if(d<bd){bd=d;best=zid;}}
+  return best;
+}
+// SPD → 이동 반경(px), HND → 돌파 반경(px)
+function spdToRange(spd){return 55+spd*30;}
+function hndToRange(hnd){return 35+hnd*22;}
+// 볼 소지 선수 이동 반경 (드리블 실패 페널티 시 0.40, 평시 0.60)
+function ballCarrierMoveRange(spd){return spdToRange(spd)*(G.dribbleFailPenalty?0.40:0.60);}
+// 볼 소지 선수 근처에 수비가 있는지 (이동 버튼 비활성화 판정)
+function defNearBallCarrier(idx){
+  const p=G.atk[idx];
+  return G.def.some((_,i)=>{const rp=defRenderPos(i);return Math.hypot(p.px-rp.x,p.py-rp.y)<85;});
+}
+
+// ── 물리 기반 이동 속도 (S=33px/m) ─────────────────────
+// 공격수: SPD 1→4m/s, 10→8m/s
+function atkPxMs(spd){return(4+(spd-1)*4/9)*S/1000;}
+// 드리블: HND 1→4m/s, 10→6m/s (선수보다 느리지만 수비를 제침)
+function dribPxMs(hnd){return(4+(hnd-1)*2/9)*S/1000;}
+// 수비: 고정 6m/s
+const DEF_PX_MS=6*S/1000;
+// 거리(px) → 이동 시간(ms) 변환 (클램프 포함)
+function durAtk(d,spd){return Math.max(150,Math.min(1400,d/atkPxMs(spd)));}
+function durDrib(d,hnd){return Math.max(180,Math.min(1400,d/dribPxMs(hnd)));}
+function durDef(d){return Math.max(80,Math.min(1200,d/DEF_PX_MS));}
+function durPass(d,isLong,isBounce){
+  const v=isLong?14*S/1000:isBounce?8*S/1000:12*S/1000;
+  return Math.max(80,Math.min(700,d/v));
+}
+function durShot(d){return Math.max(200,Math.min(900,d/(10*S/1000)));}
+
+// 수비수 i 의 "골대 방면" 렌더 위치 (zone center → basket 방향 27%)
+// 동일 zone 내 여러 수비수는 offset 으로 퍼뜨림
+function defRenderPos(i){
+  const d=G.def[i];
+  if(d.manMarkIdx!==null&&d.manMarkIdx!==undefined){
+    const mark=G.atk[d.manMarkIdx];
+    const slack=mark.hasBall?0.15:0.26;
+    const ox=(i%3-1)*14,oy=Math.floor(i/3)*14-7;
+    return{x:mark.px+slack*(BX-mark.px)+ox,y:mark.py+slack*(BY-mark.py)+oy};
+  }
+  const z=Z[d.zone];
+  const t=0.27;
+  const bx=z.x+t*(BX-z.x), by=z.y+t*(BY-z.y);
+  const ox=(i%3-1)*16, oy=Math.floor(i/3)*16-8;
+  return {x:bx+ox, y:by+oy};
+}
+
+// 모든 선수 위치를 그릴 때만 분리 (실제 game-state 는 건드리지 않음)
+function separateForDraw(positions, minDist){
+  const pos=positions.map(p=>({x:p.x,y:p.y}));
+  for(let k=0;k<4;k++){
+    for(let a=0;a<pos.length;a++){
+      for(let b=a+1;b<pos.length;b++){
+        const dx=pos[b].x-pos[a].x, dy=pos[b].y-pos[a].y;
+        const d=Math.hypot(dx,dy);
+        if(d<minDist&&d>0.01){
+          const push=(minDist-d)/2, nx=dx/d, ny=dy/d;
+          pos[a].x-=push*nx; pos[a].y-=push*ny;
+          pos[b].x+=push*nx; pos[b].y+=push*ny;
+        }
+      }
+    }
+  }
+  return pos;
+}
+
+// 픽셀 거리 기반 수비 거리 / 슛 확률
+function nearestDefPixelDist(px,py){
+  let mn=Infinity;
+  G.def.forEach((_,i)=>{
+    // EXEC 중에는 실제 애니메이션 위치(defVis) 사용 — 패스로 벌어진 공간이 슛 확률에 반영됨
+    const p=(G.phase==='EXEC'&&G.defVis[i])?G.defVis[i]:defRenderPos(i);
+    const d=Math.hypot(px-p.x,py-p.y);if(d<mn)mn=d;
+  });
+  return mn;
+}
+function defLevelPx(d){return d>95?'open':d>60?'space':d>28?'contest':'tight';}
+function calcProb(idx,opts={}){
+  const p=G.atk[idx]; const zone=Z[p.zone];
+  const pd=nearestDefPixelDist(p.px,p.py);
+  const lvl=opts.blockAttempt?'block':defLevelPx(pd);
+  let prob=SP[zone.type][lvl];
+  prob+=(p.sht-5)*1.5; if(p.sht>=9)prob+=8;
+  if(G.screenBonus)prob+=5; if(G.cutBonus)prob+=10;
+  if(G.mismatchBonus)prob+=G.mismatchBonus;
+  if(opts.lastTurn)prob-=10;
+  // 더블팀: 렌더 위치 기준 근접 수비수 2명 이상
+  const near2=G.def.filter((_,i)=>Math.hypot(p.px-defRenderPos(i).x,p.py-defRenderPos(i).y)<30).length>=2;
+  if(near2)prob-=12;
+  return Math.min(98,Math.max(5,Math.round(prob)));
+}
+function probColor(p){return p>=70?'#44dd77':p>=50?'#ffcc33':p>=35?'#ff8833':'#ff4444';}
+
+// ═══════════════════════════════════════════════════════
+// AI
+// ═══════════════════════════════════════════════════════
+function pickFormation(n){
+  if(n===1)return'2-3';
+  let tz=null,tc=0;for(const z in G.shotHist)if(G.shotHist[z]>tc){tc=G.shotHist[z];tz=z;}
+  if(n>=4&&tz){const t=Z[tz].type;if(t==='3pt')return'3-2';if(t==='layup'||t==='paint')return'2-3';if(t==='mid')return'1-3-1';}
+  const rot=['3-2','man','1-3-1','2-1-2'];
+  return rot[(n-2)%rot.length];
+}
+function initDef(fk){
+  const f=FORMS[fk];
+  const roles=FORM_ROLES[fk]||['guardL','guardR','forwardL','forwardR','center'];
+  if(fk==='man'){
+    const threat=G.atk.map((p,i)=>({i,v:p.sht*2+p.hnd+p.spd}));
+    threat.sort((a,b)=>b.v-a.v);
+    G.def=threat.map((t,di)=>({
+      id:di+1,zone:G.atk[t.i].zone,role:roles[di],
+      screened:false,screenedFull:false,screenedTurns:0,
+      tracksIdx:null,manMarkIdx:t.i,
+    }));
+    return;
+  }
+  G.def=f.pos.map((zone,i)=>({id:i+1,zone,role:roles[i],screened:false,screenedFull:false,screenedTurns:0,tracksIdx:null,manMarkIdx:null}));
+}
+function applyOpenCoverage(bz){
+  const bi=G.atk.findIndex(p=>p.hasBall);
+  const ballP=(bi>=0&&G.atkVis[bi])?G.atkVis[bi]:{x:Z[bz].x,y:Z[bz].y};
+  function validDefs(){
+    return G.def.map((d,i)=>({d,i})).filter(({d})=>!d.screened&&!d.screenedFull&&d.fightThroughResult!=='fail');
+  }
+  function defPx(i){return G.defVis[i]||defRenderPos(i);}
+  if(bz==='PT'||bz==='GM'){
+    let best=null,bestDist=Infinity;
+    validDefs().forEach(({d,i})=>{const rp=defPx(i);const dist=Math.hypot(ballP.x-rp.x,ballP.y-rp.y);if(dist<bestDist){bestDist=dist;best=d;}});
+    if(best)best.zone=bz;
+    return;
+  }
+  const defsOnBall=G.def.filter(d=>d.zone===bz&&!d.screened&&!d.screenedFull&&d.fightThroughResult!=='fail');
+  if(defsOnBall.length===0){
+    let best=null,bestDist=Infinity;
+    validDefs().forEach(({d,i})=>{const rp=defPx(i);const dist=Math.hypot(ballP.x-rp.x,ballP.y-rp.y);if(dist<bestDist){bestDist=dist;best=d;}});
+    if(best&&bestDist>=120){best.zone=bz;log('오픈 차단! 수비 긴급 커버','warn');}
+  }
+}
+
+function aiReact(){
+  const bz=(G.atk.find(p=>p.hasBall)||G.atk[0]).zone;
+  const f=FORMS[G.formation];
+
+  if(G.formation==='man'){
+    G.def.forEach((d,i)=>{
+      if(d.screened){d.screenedTurns--;if(d.screenedTurns<=0){d.screened=false;d.screenedFull=false;}return;}
+      // 패스 딜레이: passReactFrac 확률로 존 업데이트 스킵
+      if(G.passReactFrac<0.99&&Math.random()>G.passReactFrac)return;
+      const mark=G.atk[d.manMarkIdx];
+      d.zone=mark.hasBall?mark.zone:stepToward(d.zone,mark.zone);
+    });
+    return;
+  }
+
+  if(G.formation==='2-3'){
+    const cat=
+      bz==='T3'?'top':
+      bz==='W3L'?'wingL':
+      bz==='W3R'?'wingR':
+      (bz==='C3L'||bz==='SC3L')?'cornerL':
+      (bz==='C3R'||bz==='SC3R')?'cornerR':
+      bz==='EL'?'hipostL':
+      bz==='ER'?'hipostR':
+      'lowpost'; // PT, GM
+    const TGT={
+      top:     {guardL:'T3',  guardR:'T3',  forwardL:'W3L', forwardR:'W3R', center:'PT' },
+      wingL:   {guardL:'W3L', guardR:'EL',  forwardL:'W3L', forwardR:'SC3R',center:'SC3L'},
+      wingR:   {guardL:'ER',  guardR:'W3R', forwardL:'SC3L',forwardR:'W3R', center:'SC3R'},
+      cornerL: {guardL:'PT',  guardR:'EL',  forwardL:'C3L', forwardR:'W3R', center:'GM' },
+      cornerR: {guardL:'ER',  guardR:'PT',  forwardL:'W3L', forwardR:'C3R', center:'GM' },
+      hipostL: {guardL:'EL',  guardR:'ER',  forwardL:'SC3L',forwardR:'SC3R',center:'GM' },
+      hipostR: {guardL:'EL',  guardR:'ER',  forwardL:'SC3L',forwardR:'SC3R',center:'GM' },
+      lowpost: {guardL:'EL',  guardR:'ER',  forwardL:'SC3L',forwardR:'SC3R',center:'GM' },
+    };
+    G.def.forEach((d,i)=>{
+      if(d.screened){d.screenedTurns--;if(d.screenedTurns<=0){d.screened=false;d.screenedFull=false;}return;}
+      if(G.passReactFrac<0.99&&Math.random()>G.passReactFrac)return;
+      const tz=TGT[cat][d.role];
+      if(tz)d.zone=stepToward(d.zone,tz);
+    });
+    applyOpenCoverage(bz);
+    return;
+  }
+
+  if(G.formation==='3-2'){
+    const cat=
+      bz==='T3'?'top':
+      bz==='W3L'?'wingL':
+      bz==='W3R'?'wingR':
+      (bz==='C3L'||bz==='SC3L')?'cornerL':
+      (bz==='C3R'||bz==='SC3R')?'cornerR':
+      bz==='EL'?'hipostL':
+      bz==='ER'?'hipostR':
+      'lowpost'; // PT, GM
+    const TGT={
+      top:     {rover:'EL',  wingL:'W3L', wingR:'W3R', postL:'SC3L',postR:'SC3R'},
+      wingL:   {rover:'EL',  wingL:'W3L', wingR:'PT',  postL:'SC3L',postR:'GM'  },
+      wingR:   {rover:'ER',  wingL:'PT',  wingR:'W3R', postL:'GM',  postR:'SC3R'},
+      cornerL: {rover:'T3',  wingL:'C3L', wingR:'PT',  postL:'SC3L',postR:'GM'  },
+      cornerR: {rover:'T3',  wingL:'PT',  wingR:'C3R', postL:'GM',  postR:'SC3R'},
+      hipostL: {rover:'EL',  wingL:'ML',  wingR:'MR',  postL:'GM',  postR:'GM'  },
+      hipostR: {rover:'ER',  wingL:'ML',  wingR:'MR',  postL:'GM',  postR:'GM'  },
+      lowpost: {rover:'EL',  wingL:'W3L', wingR:'W3R', postL:'GM',  postR:'GM'  },
+    };
+    G.def.forEach((d,i)=>{
+      if(d.screened){d.screenedTurns--;if(d.screenedTurns<=0){d.screened=false;d.screenedFull=false;}return;}
+      if(G.passReactFrac<0.99&&Math.random()>G.passReactFrac)return;
+      const tz=TGT[cat][d.role];
+      if(tz)d.zone=stepToward(d.zone,tz);
+    });
+    applyOpenCoverage(bz);
+    return;
+  }
+
+  if(G.formation==='1-3-1'){
+    const cat=
+      bz==='T3'?'top':
+      bz==='W3L'?'wingL':
+      bz==='W3R'?'wingR':
+      (bz==='C3L'||bz==='SC3L')?'cornerL':
+      (bz==='C3R'||bz==='SC3R')?'cornerR':
+      bz==='EL'?'hipostL':
+      bz==='ER'?'hipostR':
+      'lowpost'; // PT, GM
+    const TGT={
+      top:     {chaser:'T3',  wingL:'W3L', wingR:'W3R', center:'EL', warrior:'GM' },
+      wingL:   {chaser:'W3L', wingL:'W3L', wingR:'GM',  center:'EL', warrior:'SC3L'},
+      wingR:   {chaser:'W3R', wingL:'GM',  wingR:'W3R', center:'ER', warrior:'SC3R'},
+      cornerL: {chaser:'EL',  wingL:'C3L', wingR:'GM',  center:'PT', warrior:'C3L'},
+      cornerR: {chaser:'ER',  wingL:'GM',  wingR:'C3R', center:'PT', warrior:'C3R'},
+      hipostL: {chaser:'EL',  wingL:'W3L', wingR:'W3R', center:'EL', warrior:'GM' },
+      hipostR: {chaser:'ER',  wingL:'W3L', wingR:'W3R', center:'ER', warrior:'GM' },
+      lowpost: {chaser:'T3',  wingL:'W3L', wingR:'W3R', center:'PT', warrior:'GM' },
+    };
+    G.def.forEach((d,i)=>{
+      if(d.screened){d.screenedTurns--;if(d.screenedTurns<=0){d.screened=false;d.screenedFull=false;}return;}
+      if(G.passReactFrac<0.99&&Math.random()>G.passReactFrac)return;
+      const tz=TGT[cat][d.role];
+      if(tz)d.zone=stepToward(d.zone,tz);
+    });
+    applyOpenCoverage(bz);
+    return;
+  }
+
+  if(G.formation==='2-1-2'){
+    const cat=
+      bz==='T3'?'top':
+      bz==='W3L'?'wingL':
+      bz==='W3R'?'wingR':
+      (bz==='C3L'||bz==='SC3L')?'cornerL':
+      (bz==='C3R'||bz==='SC3R')?'cornerR':
+      bz==='EL'?'hipostL':
+      bz==='ER'?'hipostR':
+      'lowpost'; // PT, GM
+    const TGT={
+      top:     {guardL:'T3',  guardR:'T3',  middle:'EL', postL:'SC3L',postR:'SC3R'},
+      wingL:   {guardL:'W3L', guardR:'EL',  middle:'EL', postL:'SC3L',postR:'GM'  },
+      wingR:   {guardL:'ER',  guardR:'W3R', middle:'ER', postL:'GM',  postR:'SC3R'},
+      cornerL: {guardL:'C3L', guardR:'EL',  middle:'ML', postL:'SC3L',postR:'GM'  },
+      cornerR: {guardL:'ER',  guardR:'C3R', middle:'MR', postL:'GM',  postR:'SC3R'},
+      hipostL: {guardL:'W3L', guardR:'W3R', middle:'EL', postL:'SC3L',postR:'SC3R'},
+      hipostR: {guardL:'W3L', guardR:'W3R', middle:'ER', postL:'SC3L',postR:'SC3R'},
+      lowpost: {guardL:'ML',  guardR:'MR',  middle:'EL', postL:'GM',  postR:'GM'  },
+    };
+    G.def.forEach((d,i)=>{
+      if(d.screened){d.screenedTurns--;if(d.screenedTurns<=0){d.screened=false;d.screenedFull=false;}return;}
+      if(G.passReactFrac<0.99&&Math.random()>G.passReactFrac)return;
+      const tz=TGT[cat][d.role];
+      if(tz)d.zone=stepToward(d.zone,tz);
+    });
+    applyOpenCoverage(bz);
+    return;
+  }
+
+  G.def.forEach((d,i)=>{
+    if(d.screened){d.screenedTurns--;if(d.screenedTurns<=0){d.screened=false;d.screenedFull=false;}return;}
+    // 패스 딜레이: passReactFrac 확률로 존 업데이트 스킵
+    if(G.passReactFrac<0.99&&Math.random()>G.passReactFrac)return;
+    if(d.tracksIdx!==null){d.zone=G.atk[d.tracksIdx].zone;return;}
+    d.zone=i<2?stepToward(d.zone,bz):stepToward(d.zone,f.pos[i]);
+  });
+  let tz=null,tc=0;for(const z in G.shotHist)if(G.shotHist[z]>tc){tc=G.shotHist[z];tz=z;}
+  if(tz&&Math.random()<0.45){
+    let bd=99,bd_=null;
+    G.def.forEach(d=>{if(d.screened||d.tracksIdx!==null)return;const dd=zoneDist(d.zone,tz);if(dd<bd){bd=dd;bd_=d;}});
+    if(bd_&&bd>0)bd_.zone=stepToward(bd_.zone,tz);
+  }
+}
+function simDefPoss(){return Math.random()<0.45?(Math.random()<0.3?3:2):0;}
+
+// ═══════════════════════════════════════════════════════
+// PLANNING
+// ═══════════════════════════════════════════════════════
+function recalcVirtBall(){
+  let vb=G.atk.findIndex(p=>p.hasBall);
+  for(const a of G.actionQueue)if(a.type==='pass')vb=a.toPlayerIdx;
+  G.virtBall=vb;
+}
+
+function startPlanPhase(){
+  G.phase='PLAN';
+  G.actionQueue=[];G.playerActions={};
+  G.shootPlanned=false;G.selIdx=null;
+  G.awaitMove=G.awaitPass=G.awaitScreen=G.awaitDribble=false;G.passIsBounce=false;
+  G.activeScreenZones=[];G.passReactFrac=1.0;G.mismatchBonus=0;
+  G.def.forEach(d=>d.fightThroughResult=null);
+  recalcVirtBall();
+  document.getElementById('btn-exec').disabled=true;
+  document.getElementById('btn-clear').disabled=true;
+  setStatus('선수를 클릭해 행동을 계획한 뒤 ▶ 턴 실행을 누르세요');
+  renderSide();draw();
+}
+
+function selPlayer(i){
+  if(G.phase!=='PLAN')return;
+  G.selIdx=i;
+  G.awaitMove=G.awaitPass=G.awaitScreen=G.awaitDribble=false;
+  renderSide();draw();
+}
+
+function doMove(){
+  if(G.selIdx===null||G.shootPlanned)return;
+  G.awaitMove=true;G.awaitPass=false;G.awaitScreen=false;G.awaitDribble=false;
+  const sm=G.atk[G.selIdx].screenMode;
+  const isBC=G.selIdx===G.virtBall;
+  setStatus(sm?'이동 후 스크린: 목적지 클릭 — 그 위치에서 스크린 자동 실행':isBC?'볼 소지 이동: 목적지 클릭 (파란 원 안) — 수비가 추격합니다':'코트 위 원하는 곳 클릭 (초록 원 안)');draw();
+}
+function doPass(){
+  if(G.selIdx===null||G.shootPlanned)return;
+  if(G.selIdx!==G.virtBall){log('공을 가진 선수만 패스 가능','warn');return;}
+  G.awaitPass=true;G.passIsBounce=false;
+  G.awaitMove=false;G.awaitScreen=false;G.awaitDribble=false;
+  setStatus('받을 선수 클릭 — 일반패스 (⚠=차단 위험)');draw();
+}
+function doPassBounce(){
+  if(G.selIdx===null||G.shootPlanned)return;
+  if(G.selIdx!==G.virtBall){log('공을 가진 선수만 패스 가능','warn');return;}
+  G.awaitPass=true;G.passIsBounce=true;
+  G.awaitMove=false;G.awaitScreen=false;G.awaitDribble=false;
+  setStatus('받을 선수 클릭 — 바운스패스 (차단↓, 속도↓)');draw();
+}
+function doToggleScreenMode(){
+  if(G.selIdx===null)return;
+  G.atk[G.selIdx].screenMode=!G.atk[G.selIdx].screenMode;
+  renderSide();draw();
+}
+function doScreen(){
+  if(G.selIdx===null||G.shootPlanned)return;
+  if(!G.atk[G.selIdx].screenMode){log('스크린 모드를 먼저 켜세요','warn');return;}
+  queueAction({type:'screen',playerIdx:G.selIdx});
+}
+function doDribble(){
+  if(G.selIdx===null||G.shootPlanned)return;
+  if(G.selIdx!==G.virtBall){log('공을 가진 선수만 돌파 가능','warn');return;}
+  G.awaitDribble=true;G.awaitMove=false;G.awaitPass=false;G.awaitScreen=false;
+  setStatus('돌파할 곳 클릭 (주황 원 안)');draw();
+}
+function doFake(){
+  if(G.selIdx===null||G.shootPlanned)return;
+  if(G.selIdx!==G.virtBall){log('공을 가진 선수만 페이크 가능','warn');return;}
+  queueAction({type:'fake',playerIdx:G.selIdx});
+}
+function doShoot(){
+  if(G.selIdx===null)return;
+  if(G.selIdx!==G.virtBall){log('공을 가진 선수만 슛 가능','warn');return;}
+  queueAction({type:'shoot',playerIdx:G.selIdx});
+  G.shootPlanned=true;
+}
+
+const ACT_LABEL={move:'이동',pass:'패스',bounce:'바운스',screen:'스크린',movescreen:'이동+스크린',dribble:'돌파',fake:'페이크',shoot:'슛!'};
+
+function queueAction(action){
+  // Remove previous plan for same player
+  G.actionQueue=G.actionQueue.filter(a=>a.playerIdx!==action.playerIdx);
+  G.actionQueue.push(action);
+  const baseLabel=(action.type==='pass'&&action.isBounce)?'바운스':ACT_LABEL[action.type];
+  G.playerActions[action.playerIdx]={...action,label:baseLabel+(action.to?'→'+Z[action.to].name.slice(0,2):'')};
+  recalcVirtBall();
+  G.selIdx=null;G.awaitMove=G.awaitPass=G.awaitScreen=G.awaitDribble=false;G.passIsBounce=false;
+  document.getElementById('btn-exec').disabled=false;
+  document.getElementById('btn-clear').disabled=false;
+  setStatus(`계획됨 (${G.actionQueue.length}개). 계속 계획하거나 ▶ 턴 실행`);
+  renderSide();draw();
+}
+
+function clearPlans(){
+  G.actionQueue=[];G.playerActions={};G.shootPlanned=false;G.selIdx=null;
+  G.awaitMove=G.awaitPass=G.awaitScreen=G.awaitDribble=false;G.passIsBounce=false;
+  recalcVirtBall();
+  document.getElementById('btn-exec').disabled=true;
+  document.getElementById('btn-clear').disabled=true;
+  setStatus('계획 초기화. 다시 계획하세요.');
+  renderSide();draw();
+}
+
+// ═══════════════════════════════════════════════════════
+// EXECUTION
+// ═══════════════════════════════════════════════════════
+function initVisPos(){
+  G.atkVis=G.atk.map(p=>({x:p.px,y:p.py}));
+  G.defVis=G.def.map((_,i)=>{const p=defRenderPos(i);return{x:p.x,y:p.y};});
+  const bi=G.atk.findIndex(p=>p.hasBall);
+  G.ballVis={...G.atkVis[bi>=0?bi:0]};
+  G.showBall=false;
+}
+
+function executeTurn(){
+  if(!G.actionQueue.length||G.phase==='EXEC')return;
+  G.phase='EXEC';
+  initVisPos();
+  document.getElementById('btn-exec').disabled=true;
+  document.getElementById('btn-clear').disabled=true;
+  setStatus('실행 중...');
+  renderSide();
+  execNext(0);
+}
+
+function execNext(idx){
+  if(idx>=G.actionQueue.length){execAIReact();return;}
+  const action=G.actionQueue[idx];
+  execAction(action,()=>execNext(idx+1));
+}
+
+function execAction(action,onDone){
+  switch(action.type){
+    case'move':       execMove(action,onDone);break;
+    case'movescreen': execMoveScreen(action,onDone);break;
+    case'pass':       execPass(action,onDone);break;
+    case'screen':     execScreen(action,onDone);break;
+    case'dribble': execDribble(action,onDone);break;
+    case'fake':    execFake(action,onDone);break;
+    case'shoot':   execShoot(action,onDone);break;
+    default:onDone();
+  }
+}
+
+function microReact(ms,onDone,reactFrac=1.0){
+  const fp=G.defVis.map(v=>({...v}));
+  const bz=(G.atk.find(p=>p.hasBall)||G.atk[0]).zone;
+  const f=FORMS[G.formation];
+  const szones=getScreenZones();
+  const tp=G.def.map((d,i)=>{
+    if(d.screened)return fp[i];
+    if(d.manMarkIdx!==null&&d.manMarkIdx!==undefined){
+      const mv=G.atkVis[d.manMarkIdx];const mk=G.atk[d.manMarkIdx];
+      const slack=mk.hasBall?0.15:0.26;
+      const ox=(i%3-1)*14,oy=Math.floor(i/3)*14-7;
+      const gx=mv.x+slack*(BX-mv.x)+ox,gy=mv.y+slack*(BY-mv.y)+oy;
+      const rx=lerp(fp[i].x,gx,0.45*reactFrac),ry=lerp(fp[i].y,gy,0.45*reactFrac);
+      const{tx:ax,ty:ay}=applyScreenZones(fp[i].x,fp[i].y,rx,ry,szones);
+      return{x:ax,y:ay};
+    }
+    let tz;
+    if(d.tracksIdx!==null)tz=G.atk[d.tracksIdx].zone;
+    else if(i<2)tz=stepToward(d.zone,bz);
+    else tz=f.pos[i];
+    const z=Z[tz];
+    const ox=(i%3-1)*16, oy=Math.floor(i/3)*16-8;
+    const t2=0.27;
+    const gx=z.x+t2*(BX-z.x)+ox, gy=z.y+t2*(BY-z.y)+oy;
+    const rx=lerp(fp[i].x,gx,0.35*reactFrac),ry=lerp(fp[i].y,gy,0.35*reactFrac);
+    const{tx:ax,ty:ay}=applyScreenZones(fp[i].x,fp[i].y,rx,ry,szones);
+    return{x:ax,y:ay};
+  });
+  const maxDisp=tp.reduce((m,t,i)=>Math.max(m,Math.hypot(t.x-fp[i].x,t.y-fp[i].y)),0);
+  const dur=Math.min(ms,Math.max(80,durDef(maxDisp)));
+  anim(dur,t=>{G.defVis=fp.map((f2,i)=>lerpP(f2,tp[i],t));},onDone);
+}
+
+function execMove(action,onDone){
+  const{playerIdx,to,tx,ty}=action;
+  const p=G.atk[playerIdx];
+  const fp={...G.atkVis[playerIdx]};
+  const tp={x:tx,y:ty};
+  const moveDist=Math.hypot(tp.x-fp.x,tp.y-fp.y);
+  log(`${p.name} → ${Z[to].name}`,'info');
+  anim(durAtk(moveDist,p.spd),t=>{G.atkVis[playerIdx]=lerpP(fp,tp,t);},()=>{
+    const old=p.zone; p.zone=to; p.px=tx; p.py=ty;
+    G.atkVis[playerIdx]={...tp};
+    if(p.hasBall){
+      // 볼 소지 이동: cutBonus 없음, 드리블 페널티 해제, 수비 추격
+      G.dribbleFailPenalty=false;
+      let ni=0,nd=Infinity;
+      G.def.forEach((d,i)=>{
+        if(d.screened)return;
+        const rp=G.defVis[i]||defRenderPos(i);
+        const dd=Math.hypot(fp.x-rp.x,fp.y-rp.y);
+        if(dd<nd){nd=dd;ni=i;}
+      });
+      const dfp={...G.defVis[ni]};
+      const chasePos={x:lerp(dfp.x,tp.x,0.40),y:lerp(dfp.y,tp.y,0.40)};
+      const chaseDist=Math.hypot(chasePos.x-dfp.x,chasePos.y-dfp.y);
+      anim(durDef(chaseDist),t2=>{G.defVis[ni]=lerpP(dfp,chasePos,t2);},()=>{microReact(140,onDone);});
+    } else {
+      if(Z[to].y>Z[old].y)G.cutBonus=true;
+      if(G.formation==='man'){
+        const dIdx=G.def.findIndex(d=>d.manMarkIdx===playerIdx);
+        if(dIdx>=0&&!G.def[dIdx].screened){
+          if(ty>G.defVis[dIdx].y+20)G.cutBonus=true;
+        }
+      }
+      microReact(140,onDone);
+    }
+  });
+}
+
+function execPass(action,onDone){
+  const{playerIdx,toPlayerIdx,isBounce}=action;
+  const passer=G.atk[playerIdx];
+  if(!passer.hasBall){log(`${passer.name}: 공 없음 — 패스 건너뜀`,'warn');onDone();return;}
+  const receiver=G.atk[toPlayerIdx];
+  const fp={...G.atkVis[playerIdx]};
+  const tp={...G.atkVis[toPlayerIdx]};
+
+  // ① 패스 라인 플래시 (110ms)
+  G.showPassLine=true;
+  G.passLine={x1:fp.x,y1:fp.y,x2:tp.x,y2:tp.y,bounce:!!isBounce};
+
+  // 차단 판정 (라인 기반)
+  const result=tryInterceptLine(fp,tp,!!isBounce,passer.px,passer.py);
+
+  anim(110,()=>{},()=>{
+    G.showPassLine=false;
+    G.showBall=true;
+    G.ballVis={...fp};
+
+    if(result.intercepted){
+      // ② 차단 애니메이션: 공 + 수비 동시 이동
+      const{defIdx,interceptPoint}=result;
+      const defStart={...G.defVis[defIdx]};
+      const defTarget={
+        x:lerp(defStart.x,interceptPoint.x,0.82),
+        y:lerp(defStart.y,interceptPoint.y,0.82)
+      };
+      log(`${passer.name} 패스 → D${defIdx+1} 차단!`,'bad');
+      const intDist=Math.hypot(interceptPoint.x-fp.x,interceptPoint.y-fp.y);
+      anim(durPass(intDist,false,!!isBounce),t=>{
+        G.ballVis=lerpP(fp,interceptPoint,t);
+        G.defVis[defIdx]=lerpP(defStart,defTarget,t);
+      },()=>{
+        G.showBall=false;
+        setTimeout(()=>endTurnover(),300);
+      });
+    } else {
+      // ③ 패스 성공: 바운스는 호 없이 직선, 일반은 살짝 상승 호
+      const passType=isBounce?'바운스패스':'패스';
+      log(`${passer.name} → ${receiver.name} ${passType}`,'info');
+      if(passer.pas>=8)G.screenBonus=true;
+      const pd2=zoneDist(passer.zone,receiver.zone);
+      const isLong2=pd2>=2;
+      const passDist=Math.hypot(tp.x-fp.x,tp.y-fp.y);
+      const dur=durPass(passDist,isLong2,!!isBounce);
+      anim(dur,t=>{
+        const bx=lerp(fp.x,tp.x,t);
+        const by=lerp(fp.y,tp.y,t);
+        // 일반패스: 살짝 상승 호 / 바운스: 하강 후 상승 (Z방향 표현)
+        const arc=isBounce?12*Math.sin(t*Math.PI):-16*Math.sin(t*Math.PI);
+        G.ballVis={x:bx,y:by+arc};
+      },()=>{
+        passer.hasBall=false;receiver.hasBall=true;
+        G.ballVis={...tp};G.showBall=false;
+        // 패스 종류별 수비 반응 딜레이 (pd2/isLong2는 외부에서 계산됨)
+        let prf=isLong2?1.0:isBounce?0.18:0.30;
+        if(G.screenBonus&&!isLong2)prf*=0.65;
+        G.passReactFrac=Math.max(0.08,G.passReactFrac*prf);
+        if(G.passReactFrac<0.22&&!isLong2)log('볼무브먼트! 수비 반응 지연','good');
+        microReact(140,onDone,G.passReactFrac);
+      });
+    }
+  });
+}
+
+function execDribble(action,onDone){
+  const{playerIdx,to,tx,ty}=action;
+  const p=G.atk[playerIdx];
+  if(!p.hasBall){log(`${p.name}: 공 없음 — 돌파 건너뜀`,'warn');onDone();return;}
+  const fp={...G.atkVis[playerIdx]};
+  const tp={x:tx,y:ty};
+  // 돌파 경로 위 수비수만 페널티 적용 (fightThroughResult 반영)
+  const dx=tp.x-fp.x,dy=tp.y-fp.y,len=Math.hypot(dx,dy)||1;
+  const pathDefs=[];  // {dist, partial}
+  G.def.forEach((d,i)=>{
+    if(d.screened||d.screenedFull)return;
+    if(d.fightThroughResult==='fail')return; // 경로 못 따라옴 → 제외
+    const rp=(G.phase==='EXEC'&&G.defVis[i])?G.defVis[i]:defRenderPos(i);
+    const t=((rp.x-fp.x)*dx+(rp.y-fp.y)*dy)/(len*len);
+    const perpDist=Math.hypot(rp.x-(fp.x+t*dx),rp.y-(fp.y+t*dy));
+    if(t>0.05&&t<1.05&&perpDist<45)
+      pathDefs.push({dist:Math.hypot(p.px-rp.x,p.py-rp.y),partial:d.fightThroughResult==='partial'});
+  });
+  // 성공률: HND 기반 + 경로 수비 페널티 + 스크린 보너스
+  let rate=p.hnd*8; // HND10→80%, HND5→40%
+  if(pathDefs.length===0){}
+  else if(pathDefs.length===1){
+    const {dist,partial}=pathDefs[0];
+    if(partial){if(dist<=30)rate-=12;else if(dist<=65)rate-=5;}
+    else{if(dist<=30)rate-=25;else if(dist<=65)rate-=10;}
+  }
+  else rate-=35;
+  if(G.screenBonus)rate+=22;
+  rate=Math.min(92,Math.max(12,rate));
+  const success=Math.random()*100<rate;
+  // 1차 수비 (볼 캐리어 가장 가까운)
+  let ni=0,nd=Infinity;
+  G.def.forEach((d,i)=>{
+    if(d.screened)return;
+    const rp=defRenderPos(i);
+    const dd=Math.hypot(p.px-rp.x,p.py-rp.y);
+    if(dd<nd){nd=dd;ni=i;}
+  });
+  const dfp={...G.defVis[ni]};
+  const chasePos={x:lerp(dfp.x,tp.x,0.45),y:lerp(dfp.y,tp.y,0.45)};
+  const dribDist=Math.hypot(tp.x-fp.x,tp.y-fp.y);
+  const chaseDist=Math.hypot(chasePos.x-dfp.x,chasePos.y-dfp.y);
+  const dd=durDrib(dribDist,p.hnd);
+
+  if(success){
+    log(`${p.name} 돌파 성공! → ${Z[to].name}`,'good');
+    // 헬프 수비 확률: 안쪽 존일수록 높음
+    const zType=Z[to].type;
+    const helpChance=zType==='layup'?0.55:zType==='paint'?0.50:zType==='mid'?0.35:0.18;
+    const helpDef=Math.random()<helpChance;
+
+    if(!helpDef){
+      // Case 1: 오픈 드라이브
+      log('오픈 드라이브! 수비 공백 포착','good');
+      anim(dd,t=>{G.atkVis[playerIdx]=lerpP(fp,tp,t);G.defVis[ni]=lerpP(dfp,chasePos,t);},()=>{
+        p.zone=to;p.px=tx;p.py=ty;G.cutBonus=true;G.screenBonus=true;
+        G.atkVis[playerIdx]={...tp};
+        microReact(140,onDone);
+      });
+    } else {
+      // Case 2: 헬프 수비 수렴 (1~2명 추가 수비 몰림)
+      const helpers=[];
+      G.def.forEach((d,i)=>{
+        if(i===ni||d.screened)return;
+        const rp=G.defVis[i]||defRenderPos(i);
+        helpers.push({i,dd:Math.hypot(tp.x-rp.x,tp.y-rp.y),ifp:{...G.defVis[i]||rp}});
+      });
+      helpers.sort((a,b)=>a.dd-b.dd);
+      const helpList=helpers.slice(0,Math.min(2,helpers.length));
+      anim(dd,t=>{
+        G.atkVis[playerIdx]=lerpP(fp,tp,t);
+        G.defVis[ni]=lerpP(dfp,chasePos,t);
+        helpList.forEach(h=>{
+          const htg={x:lerp(h.ifp.x,tp.x,0.40),y:lerp(h.ifp.y,tp.y,0.40)};
+          G.defVis[h.i]=lerpP(h.ifp,htg,t);
+        });
+      },()=>{
+        p.zone=to;p.px=tx;p.py=ty;G.cutBonus=true;
+        G.atkVis[playerIdx]={...tp};
+        microReact(140,onDone);
+      });
+    }
+  } else {
+    // 돌파 실패: 드리블 페널티 — 다음 이동 범위 40%로 축소
+    log(`${p.name} 돌파 실패! — 이동 범위 축소`,'bad');
+    G.dribbleFailPenalty=true;
+    const mid={x:lerp(fp.x,tp.x,0.4),y:lerp(fp.y,tp.y,0.4)};
+    const halfDist=Math.hypot(mid.x-fp.x,mid.y-fp.y);
+    anim(durDrib(halfDist*2,p.hnd),t=>{
+      G.atkVis[playerIdx]=t<0.5?lerpP(fp,mid,t*2):lerpP(mid,fp,(t-0.5)*2);
+      G.defVis[ni]=lerpP(dfp,chasePos,t*0.5);
+    },()=>{G.atkVis[playerIdx]=fp;microReact(140,onDone);});
+  }
+}
+
+
+function roleLevel(role){
+  if(['guardL','guardR','chaser','wingL','wingR'].includes(role))return 1;
+  if(['forwardL','forwardR','rover'].includes(role))return 2;
+  return 3; // center, postL, postR
+}
+
+function pickManScreenResponse(dSfp,dBfp,dBIdx){
+  const dist=Math.hypot(dBfp.x-dSfp.x,dBfp.y-dSfp.y);
+  const dB=G.def[dBIdx];
+  // 스위치: 세 조건 모두 충족할 때만
+  if(dist<=80&&dB.screenedFull&&G.manScreenHistory>=3)return'switch';
+  // screenedFull 아닌 경우 → fight through
+  if(!dB.screenedFull)return'fight';
+  // 골밑 근처 스크린 → hedge
+  const bci=G.atk.findIndex(p=>p.hasBall);
+  const bz=G.atk[bci>=0?bci:0].zone;
+  if(bz==='PT'||bz==='GM'||bz==='EL'||bz==='ER')return'hedge';
+  // 외곽 슛 위협 → over, 아니면 under
+  const highShot=Object.values(G.shotHist).some(v=>v>=2);
+  return highShot?'over':'under';
+}
+
+function execScreenMan(action,onDone){
+  const{playerIdx}=action;
+  const screener=G.atk[playerIdx];
+  const fp={...G.atkVis[playerIdx]};
+  G.manScreenHistory++;G.screenCount++;
+
+  const bci=G.atk.findIndex(p=>p.hasBall);
+  const dSIdx=G.def.findIndex(d=>d.manMarkIdx===playerIdx);
+  const dBIdx=G.def.findIndex(d=>d.manMarkIdx===bci);
+  if(dSIdx<0||dBIdx<0){
+    log(`${screener.name} 스크린 — 수비 매칭 오류`,'warn');
+    screener.screenMode=false;onDone();return;
+  }
+
+  const dSfp={...G.defVis[dSIdx]};
+  const dBfp={...G.defVis[dBIdx]};
+  const ballVis={...G.atkVis[bci]};
+
+  const resp=pickManScreenResponse(dSfp,dBfp,dBIdx);
+  const respLabel={switch:'스위치',under:'언더',over:'오버',hedge:'헤지',fight:'파이트스루'};
+  log(`${screener.name} 스크린 → 맨투맨 ${respLabel[resp]}`,'info');
+
+  if(resp==='fight'){
+    // fight through: 판정 후 애니메이션
+    const screenerScr=screener.scr;
+    const defDist=Math.hypot(dBfp.x-fp.x,dBfp.y-fp.y);
+    const successChance=0.7-(screenerScr*0.04)-(defDist>80?0.2:0);
+    const roll=Math.random();
+    const ftResult=roll<successChance*0.4?'full':roll<successChance?'partial':'fail';
+    G.def[dBIdx].fightThroughResult=ftResult;
+    const ftLog={full:`${screener.name} 스크린 → fight through 성공, 경로 차단`,
+                 partial:`${screener.name} 스크린 → fight through 부분 성공`,
+                 fail:`${screener.name} 스크린 → fight through 실패! 공간 생김`};
+    log(ftLog[ftResult],'info');
+    const toSc={x:fp.x-dBfp.x,y:fp.y-dBfp.y};
+    const toScLen=Math.hypot(toSc.x,toSc.y)||1;
+    const wayPt={x:fp.x+toSc.x/toScLen*22,y:fp.y+toSc.y/toScLen*22};
+    const endPt={x:ballVis.x-toSc.x/toScLen*28,y:ballVis.y-toSc.y/toScLen*28};
+    const ftDist=Math.hypot(wayPt.x-dBfp.x,wayPt.y-dBfp.y)+Math.hypot(endPt.x-wayPt.x,endPt.y-wayPt.y);
+    anim(durDef(ftDist),t=>{
+      G.defVis[dBIdx]={x:t<0.5?lerp(dBfp.x,wayPt.x,t*2):lerp(wayPt.x,endPt.x,(t-0.5)*2),
+                       y:t<0.5?lerp(dBfp.y,wayPt.y,t*2):lerp(wayPt.y,endPt.y,(t-0.5)*2)};
+    },()=>{
+      screener.screenMode=false;
+      microReact(140,onDone);
+    });
+
+  }else if(resp==='switch'){
+    const SWITCH_PX_MS=3*S/1000;
+    const lineX=dBfp.x-dSfp.x,lineY=dBfp.y-dSfp.y;
+    const lineLen=Math.hypot(lineX,lineY)||1;
+    const perpX=-lineY/lineLen,perpY=lineX/lineLen;
+    const midX=(dSfp.x+dBfp.x)/2,midY=(dSfp.y+dBfp.y)/2;
+    const arcOff=Math.max(30,lineLen*0.35);
+    const arcS={x:midX+perpX*arcOff,y:midY+perpY*arcOff};
+    const arcB={x:midX-perpX*arcOff,y:midY-perpY*arcOff};
+    const pathS=Math.hypot(arcS.x-dSfp.x,arcS.y-dSfp.y)+Math.hypot(dBfp.x-arcS.x,dBfp.y-arcS.y);
+    const pathB=Math.hypot(arcB.x-dBfp.x,arcB.y-dBfp.y)+Math.hypot(dSfp.x-arcB.x,dSfp.y-arcB.y);
+    const swDur=Math.max(500,Math.min(1500,Math.max(pathS,pathB)/SWITCH_PX_MS));
+    // 미스매치 계산: dSIdx(스크리너 수비)가 볼 캐리어를 맡게 됨
+    const lvDef=roleLevel(G.def[dSIdx].role); // 새로 볼캐리어 담당
+    const lvAtk=roleLevel(G.def[dBIdx].role); // 기존 볼캐리어 담당 = 공격수 레벨 근사
+    const lvDiff=lvDef-lvAtk;
+    G.mismatchBonus=lvDiff<=-2?15:lvDiff>=2?12:Math.abs(lvDiff)===1?5:0;
+    anim(swDur,t=>{
+      G.defVis[dSIdx]=t<0.5?lerpP(dSfp,arcS,t*2):lerpP(arcS,dBfp,(t-0.5)*2);
+      G.defVis[dBIdx]=t<0.5?lerpP(dBfp,arcB,t*2):lerpP(arcB,dSfp,(t-0.5)*2);
+    },()=>{
+      G.def[dSIdx].manMarkIdx=bci;
+      G.def[dBIdx].manMarkIdx=playerIdx;
+      G.activeScreenZones.push({x:screener.px,y:screener.py,r:40});
+      screener.screenMode=false;G.screenBonus=true;
+      microReact(140,onDone);
+    });
+
+  }else if(resp==='under'){
+    const midPt={x:(dBfp.x+fp.x)/2+30,y:(dBfp.y+fp.y)/2+20};
+    const endPt={x:ballVis.x+0.15*(BX-ballVis.x),y:ballVis.y+0.15*(BY-ballVis.y)};
+    const underDist=Math.hypot(midPt.x-dBfp.x,midPt.y-dBfp.y)+Math.hypot(endPt.x-midPt.x,endPt.y-midPt.y);
+    anim(durDef(underDist),t=>{
+      const ax=t<0.5?lerp(dBfp.x,midPt.x,t*2):lerp(midPt.x,endPt.x,(t-0.5)*2);
+      const ay=t<0.5?lerp(dBfp.y,midPt.y,t*2):lerp(midPt.y,endPt.y,(t-0.5)*2);
+      G.defVis[dBIdx]={x:ax,y:ay};
+    },()=>{
+      G.def[dBIdx].screened=true;G.def[dBIdx].screenedTurns=1;
+      G.activeScreenZones.push({x:screener.px,y:screener.py,r:40});
+      screener.screenMode=false;G.screenBonus=true;
+      microReact(140,onDone);
+    });
+
+  }else if(resp==='over'){
+    const midPt={x:(dBfp.x+fp.x)/2-30,y:Math.min(dBfp.y,fp.y)-25};
+    const endPt={x:ballVis.x+0.15*(BX-ballVis.x),y:ballVis.y+0.15*(BY-ballVis.y)};
+    const overDist=Math.hypot(midPt.x-dBfp.x,midPt.y-dBfp.y)+Math.hypot(endPt.x-midPt.x,endPt.y-midPt.y);
+    anim(durDef(overDist),t=>{
+      const ax=t<0.5?lerp(dBfp.x,midPt.x,t*2):lerp(midPt.x,endPt.x,(t-0.5)*2);
+      const ay=t<0.5?lerp(dBfp.y,midPt.y,t*2):lerp(midPt.y,endPt.y,(t-0.5)*2);
+      G.defVis[dBIdx]={x:ax,y:ay};
+    },()=>{
+      G.activeScreenZones.push({x:screener.px,y:screener.py,r:40});
+      screener.screenMode=false;G.cutBonus=true;
+      microReact(140,onDone);
+    });
+
+  }else{
+    // hedge: 전진 후 복귀
+    const rushPt={x:lerp(dSfp.x,ballVis.x,0.60),y:lerp(dSfp.y,ballVis.y,0.60)};
+    const hedgeOutDist=Math.hypot(rushPt.x-dSfp.x,rushPt.y-dSfp.y);
+    anim(durDef(hedgeOutDist),t=>{G.defVis[dSIdx]=lerpP(dSfp,rushPt,t);},()=>{
+      anim(durDef(hedgeOutDist),t=>{G.defVis[dSIdx]=lerpP(rushPt,dSfp,t);},()=>{
+        G.activeScreenZones.push({x:screener.px,y:screener.py,r:40});
+        screener.screenMode=false;G.screenBonus=true;
+        microReact(140,onDone);
+      });
+    });
+  }
+}
+
+function execMoveScreen(action,onDone){
+  const{playerIdx,to,tx,ty}=action;
+  const p=G.atk[playerIdx];
+  const fp={...G.atkVis[playerIdx]};
+  const tp={x:tx,y:ty};
+  const msDist=Math.hypot(tp.x-fp.x,tp.y-fp.y);
+  log(`${p.name} → ${Z[to].name} 이동`,'info');
+  anim(durAtk(msDist,p.spd),t=>{G.atkVis[playerIdx]=lerpP(fp,tp,t);},()=>{
+    const old=p.zone;p.zone=to;p.px=tx;p.py=ty;
+    G.atkVis[playerIdx]={...tp};
+    if(Z[to].y>Z[old].y)G.cutBonus=true;
+    execScreen({type:'screen',playerIdx},onDone);
+  });
+}
+
+function execScreen(action,onDone){
+  if(G.formation==='man'){execScreenMan(action,onDone);return;}
+  const{playerIdx}=action;
+  const screener=G.atk[playerIdx];
+  const fp={...G.atkVis[playerIdx]};
+
+  // 1. 볼핸들러를 마크하는 수비 탐색 (스크리너 사정거리 내에서)
+  const bci=G.atk.findIndex(p=>p.hasBall);
+  const bv=G.atkVis[bci>=0?bci:0];
+  const SCREEN_RANGE=95; // 스크리너가 수비에 닿을 수 있는 최대 거리(px)
+
+  let defIdx=-1,bestDist=Infinity;
+  G.def.forEach((d,i)=>{
+    if(d.screened)return;
+    const rp=G.defVis[i]||defRenderPos(i);
+    // 스크리너와의 거리 조건: 물리적으로 스크린이 닿는 범위여야 함
+    const distToScreener=Math.hypot(fp.x-rp.x,fp.y-rp.y);
+    if(distToScreener>SCREEN_RANGE)return;
+    // 볼핸들러에 가장 가까운 수비를 우선 타겟
+    const distToBall=Math.hypot(rp.x-bv.x,rp.y-bv.y);
+    if(distToBall<bestDist){bestDist=distToBall;defIdx=i;}
+  });
+  if(defIdx<0){
+    log(`${screener.name}: 스크린 위치 부적합 — 수비와 너무 멀거나 볼핸들러 경로상 수비 없음`,'warn');
+    screener.screenMode=false;onDone();return;
+  }
+
+  const defender=G.def[defIdx];
+  const dp={...G.defVis[defIdx]};
+
+  // 2. 각도 계산: 수비 시선(→공) × 스크리너 위치 방향
+  const dfx=bv.x-dp.x, dfy=bv.y-dp.y;
+  const dfLen=Math.hypot(dfx,dfy)||1;
+  const dfNx=dfx/dfLen, dfNy=dfy/dfLen;
+  // 수비→스크리너 방향
+  const srx=fp.x-dp.x, sry=fp.y-dp.y;
+  const srLen=Math.hypot(srx,sry)||1;
+  const srNx=srx/srLen, srNy=sry/srLen;
+  const dot=dfNx*srNx+dfNy*srNy;
+  const angle=dot>0.5?'front':dot<-0.5?'back':'side';
+
+  // 3. 인지 판정
+  G.screenCount++;
+  const awarenessBase=Math.min(0.80,0.18+(G.screenCount-1)*0.10);
+  const scrBonus=Math.max(0,(screener.scr-5)*0.04);
+  const aware=Math.random()<Math.max(0,awarenessBase-scrBonus);
+
+  // 4. 결과 결정
+  let result;
+  if(!aware){
+    result=angle==='back'?'full_block':'dir_limit';
+    if(result==='dir_limit'&&screener.scr>=9&&Math.random()<0.40)result='full_block';
+  } else {
+    result=angle==='front'?'fail':'delay';
+  }
+
+  // 5. 로그 한 줄
+  const angleLabel=angle==='front'?'정면':angle==='back'?'후면':'측면';
+  const resultTag={full_block:'완전차단',dir_limit:'방향제한',delay:'지연',fail:'실패'};
+  const logType=result==='fail'?'bad':result==='delay'?'info':'good';
+  log(`${screener.name} ${angleLabel}스크린 → ${resultTag[result]}`,logType);
+
+  // 6. 결과별 수비 애니메이션
+  const contactPt={x:lerp(dp.x,fp.x,0.52),y:lerp(dp.y,fp.y,0.52)};
+
+  const contactDist=Math.hypot(contactPt.x-dp.x,contactPt.y-dp.y);
+
+  if(result==='full_block'){
+    // 수비가 전진하다 충돌 → 진동 이펙트 (충돌 진동은 고정 시간)
+    anim(durDef(contactDist),t=>{G.defVis[defIdx]=lerpP(dp,contactPt,t);},()=>{
+      G.screenFlash={x:contactPt.x,y:contactPt.y,alpha:1.0};
+      anim(320,t=>{
+        G.screenFlash.alpha=1-t;
+        const shk=Math.sin(t*Math.PI*9)*9*(1-t);
+        G.defVis[defIdx]={x:contactPt.x+shk,y:contactPt.y+shk*0.4};
+        G.atkVis[playerIdx]={x:fp.x+shk*0.35,y:fp.y+shk*0.15};
+      },()=>{
+        G.screenFlash=null;G.defVis[defIdx]={...dp};G.atkVis[playerIdx]={...fp};
+        defender.screened=true;defender.screenedFull=true;defender.screenedTurns=1;G.screenBonus=true;
+        G.activeScreenZones.push({x:screener.px,y:screener.py,r:40});
+        screener.screenMode=false;microReact(140,onDone);
+      });
+    });
+
+  } else if(result==='dir_limit'){
+    // 수비가 충돌 후 측면으로 밀려남
+    const pX=-srNy*26,pY=srNx*26;
+    const sidePt={x:dp.x+pX,y:dp.y+pY};
+    const slideDist=Math.hypot(sidePt.x-contactPt.x,sidePt.y-contactPt.y);
+    anim(durDef(contactDist),t=>{G.defVis[defIdx]=lerpP(dp,contactPt,t);},()=>{
+      G.screenFlash={x:contactPt.x,y:contactPt.y,alpha:1.0};
+      anim(100,t=>{G.screenFlash.alpha=1-t;},()=>{
+        G.screenFlash=null;
+        anim(durDef(slideDist),t=>{G.defVis[defIdx]=lerpP(contactPt,sidePt,t);},()=>{
+          G.defVis[defIdx]={...sidePt};
+          defender.screened=true;defender.screenedTurns=1;G.screenBonus=true;
+          G.activeScreenZones.push({x:screener.px,y:screener.py,r:40});
+          screener.screenMode=false;microReact(140,onDone);
+        });
+      });
+    });
+
+  } else if(result==='delay'){
+    // 수비가 스크리너를 우회하는 호 경로
+    const arcMid={x:(dp.x+fp.x)/2+dfNy*44,y:(dp.y+fp.y)/2-dfNx*44};
+    const endPt={x:dp.x+dfNx*20,y:dp.y+dfNy*20};
+    const delayDist=Math.hypot(arcMid.x-dp.x,arcMid.y-dp.y)+Math.hypot(endPt.x-arcMid.x,endPt.y-arcMid.y);
+    anim(durDef(delayDist),t=>{
+      const ax=t<0.5?lerp(dp.x,arcMid.x,t*2):lerp(arcMid.x,endPt.x,(t-0.5)*2);
+      const ay=t<0.5?lerp(dp.y,arcMid.y,t*2):lerp(arcMid.y,endPt.y,(t-0.5)*2);
+      G.defVis[defIdx]={x:ax,y:ay};
+    },()=>{
+      G.defVis[defIdx]={...endPt};
+      defender.screened=true;defender.screenedTurns=1;
+      G.activeScreenZones.push({x:screener.px,y:screener.py,r:40});
+      screener.screenMode=false;microReact(140,onDone);
+    });
+
+  } else {
+    // fail: 수비가 미리 보고 자연스럽게 우회
+    const sidePt={x:dp.x+dfNy*24,y:dp.y-dfNx*24};
+    const endPt={x:dp.x+dfNx*16,y:dp.y+dfNy*16};
+    const failDist=Math.hypot(sidePt.x-dp.x,sidePt.y-dp.y)+Math.hypot(endPt.x-sidePt.x,endPt.y-sidePt.y);
+    anim(durDef(failDist),t=>{
+      const sx=t<0.45?lerp(dp.x,sidePt.x,t/0.45):lerp(sidePt.x,endPt.x,(t-0.45)/0.55);
+      const sy=t<0.45?lerp(dp.y,sidePt.y,t/0.45):lerp(sidePt.y,endPt.y,(t-0.45)/0.55);
+      G.defVis[defIdx]={x:sx,y:sy};
+    },()=>{
+      G.defVis[defIdx]={...endPt};
+      screener.screenMode=false;microReact(140,onDone);
+    });
+  }
+}
+
+function execFake(action,onDone){
+  const{playerIdx}=action;
+  const p=G.atk[playerIdx];
+  if(!p.hasBall){log(`${p.name}: 공 없음 — 페이크 건너뜀`,'warn');onDone();return;}
+  const zone=Z[p.zone];
+  const pd=nearestDefPixelDist(p.px,p.py);
+  let ch=zone.type==='layup'?0.72:zone.type==='paint'?0.58:zone.type==='mid'?0.45:0.12;
+  if(pd>90)ch-=0.28;ch-=Math.min(0.5,G.fakeCount*0.16);G.fakeCount++;
+  let ci=-1,cd=Infinity;G.def.forEach((d,i)=>{if(!d.screened){const rp=defRenderPos(i);const dd=Math.hypot(p.px-rp.x,p.py-rp.y);if(dd<cd){cd=dd;ci=i;}}});
+  const jumped=Math.random()<ch;
+  if(jumped&&ci>=0){
+    const dfp={...G.defVis[ci]};
+    const up={x:dfp.x,y:dfp.y-20};
+    log(`슛 페이크! D${ci+1} 점프! 오픈!`,'good');
+    anim(300,t=>{const j=t<0.5?t*2:2-t*2;G.defVis[ci]={x:dfp.x,y:lerp(dfp.y,up.y,j)};},()=>{
+      G.def[ci].screened=true;G.def[ci].screenedTurns=1;G.defVis[ci]=dfp;onDone();
+    });
+  } else {
+    log(G.fakeCount>=3?'수비가 학습함. 페이크 반응 없음.':'페이크 — 수비 반응 없음.','warn');
+    anim(220,()=>{},onDone);
+  }
+}
+
+function execShoot(action,onDone){
+  const{playerIdx}=action;
+  const p=G.atk[playerIdx];
+  if(!p.hasBall){log(`${p.name}: 공 없음 — 슛 건너뜀`,'warn');onDone();return;}
+  const fp={...G.atkVis[playerIdx]};
+  const basket={x:BX,y:BY};
+  const isLast=G.sc<=1;
+  const prob=calcProb(playerIdx,{lastTurn:isLast});
+  const made=Math.random()*100<prob;
+  const pts=Z[p.zone].type==='3pt'?3:2;
+  G.shotHist[p.zone]=(G.shotHist[p.zone]||0)+1;
+  G.showBall=true;G.ballVis={...fp};
+  const shotDist=Math.hypot(basket.x-fp.x,basket.y-fp.y);
+  anim(durShot(shotDist),t=>{
+    G.ballVis={x:lerp(fp.x,basket.x,t),y:lerp(fp.y,basket.y,t)-50*Math.sin(t*Math.PI)};
+  },()=>{
+    G.showBall=false;
+    G.screenBonus=false;G.cutBonus=false;G.fakeCount=Math.max(0,G.fakeCount-1);
+    if(made){G.atkScore+=pts;log(`${p.name} ${Z[p.zone].name} (${prob}%) → ${pts}점 성공!`,'good');}
+    else{log(`${p.name} ${Z[p.zone].name} (${prob}%) → 실패`,'bad');}
+    updateHUD();
+    // Flash result on canvas briefly then end
+    setTimeout(()=>endPoss(),350);
+  });
+}
+
+function endTurnover(){
+  G.phase='PLAN';
+  log('턴오버! 포제션 종료.','bad');
+  setTimeout(()=>endPoss(),400);
+}
+
+function execAIReact(){
+  log('── AI 수비 반응 ──','info');
+  const fp=G.defVis.map(v=>({...v}));
+  aiReact();
+  const szones=getScreenZones();
+  const prf=G.passReactFrac; // 이번 턴 패스 딜레이 — 수비가 목표 위치의 일부까지만 이동
+  const tp=G.def.map((d,i)=>{
+    let rx,ry;
+    if(d.manMarkIdx!==null&&d.manMarkIdx!==undefined){
+      const mk=G.atk[d.manMarkIdx];
+      const slack=mk.hasBall?0.15:0.26;
+      const ox=(i%3-1)*14,oy=Math.floor(i/3)*14-7;
+      rx=mk.px+slack*(BX-mk.px)+ox;ry=mk.py+slack*(BY-mk.py)+oy;
+    }else{
+      const p=defRenderPos(i);rx=p.x;ry=p.y;
+    }
+    const{tx:sx,ty:sy}=applyScreenZones(fp[i].x,fp[i].y,rx,ry,szones);
+    return{x:lerp(fp[i].x,sx,prf),y:lerp(fp[i].y,sy,prf)};
+  });
+  const maxDist=fp.reduce((m,f,i)=>Math.max(m,Math.hypot(tp[i].x-f.x,tp[i].y-f.y)),0);
+  const reactDur=Math.max(150,Math.min(800,durDef(maxDist)));
+  anim(reactDur,t=>{G.defVis=fp.map((f,i)=>lerpP(f,tp[i],t));},()=>finalizeTurn());
+}
+
+function finalizeTurn(){
+  G.sc--;
+  G.phase='PLAN';
+  if(G.sc<=0){
+    // Force shot on ball holder
+    const bi=G.atk.findIndex(p=>p.hasBall);
+    if(bi>=0){
+      log('샷클락 종료! 강제 슛!','warn');
+      G.phase='EXEC';
+      execShoot({playerIdx:bi},()=>{});
+      return;
+    }
+  }
+  updateHUD();
+  startPlanPhase();
+}
+
+function endPoss(){
+  G.poss++;G.screenBonus=false;G.cutBonus=false;G.phase='PLAN';
+  if(G.poss<=5)startPoss();
+  else runDefPhase();
+}
+
+function startPoss(){
+  G.sc=10;G.dribbleFailPenalty=false;G.formation=pickFormation(G.poss);
+  G.atk.forEach((p,i)=>{p.zone=ATKS[i];p.px=Z[ATKS[i]].x;p.py=Z[ATKS[i]].y;p.hasBall=i===0;p.screened=false;p.screenMode=false;});
+  initDef(G.formation);
+  G.atkVis=G.atk.map(p=>({x:p.px,y:p.py}));
+  G.defVis=G.def.map((_,i)=>{const p=defRenderPos(i);return{x:p.x,y:p.y};});
+  G.ballVis={...G.atkVis[0]};G.showBall=false;
+  const f=FORMS[G.formation];
+  log(`=== 공격 포제션 ${G.poss} ===`,'sep');
+  log(`수비: ${f.name}`,'info');
+  if(f.weak.length)log(`약점: ${f.weak.map(w=>Z[w]?Z[w].name:w).join(', ')}`,'info');
+  updateHUD();startPlanPhase();
+}
+
+function runDefPhase(){
+  let total=0;const res=[];
+  for(let i=0;i<5;i++){const p=simDefPoss();total+=p;res.push(p);}
+  G.defScore=total;
+  log('=== 수비 페이즈 자동 진행 ===','sep');
+  res.forEach((p,i)=>log(`수비 ${i+1}: ${p>0?p+'점 실점':'수비 성공'}`,p>0?'bad':'good'));
+  updateHUD();setTimeout(showResult,800);
+}
+
+function showResult(){
+  const diff=G.atkScore-G.defScore,win=diff>0;
+  document.getElementById('m-title').textContent=win?'승리!':diff===0?'무승부':'패배';
+  document.getElementById('m-body').innerHTML=`
+    <p>공격 득점: <strong>${G.atkScore}점</strong></p>
+    <p>수비 실점: <strong>${G.defScore}점</strong></p>
+    <div class="mbig" style="color:${win?'#44dd77':diff===0?'#ffcc33':'#ff5555'}">${diff>0?'+':''}${diff}점</div>
+    <p style="color:#aaa">${win?'훌륭한 전술 게임이었습니다!':diff===0?'박빙!':'다음엔 수비 약점을 더 파고들어 보세요!'}</p>`;
+  document.getElementById('m-btn').onclick=()=>{
+    document.getElementById('modal-bg').classList.remove('active');
+    document.getElementById('game-screen').classList.remove('active');
+    document.getElementById('title-screen').classList.add('active');
+  };
+  document.getElementById('modal-bg').classList.add('active');
+}
+
+// ═══════════════════════════════════════════════════════
+// CANVAS CLICK  (planning only)
+// ═══════════════════════════════════════════════════════
+cv.addEventListener('click',e=>{
+  if(G.phase!=='PLAN')return;
+  const r=cv.getBoundingClientRect();
+  const sx=CW/r.width,sy=CH/r.height;
+  const mx=(e.clientX-r.left)*sx,my=(e.clientY-r.top)*sy;
+
+  // 코트 경계 클램프
+  const cx=Math.max(LS+2,Math.min(RS-2,mx));
+  const cy=Math.max(HC_Y+2,Math.min(EL_Y-2,my));
+
+  if(G.awaitMove&&G.selIdx!==null){
+    const p=G.atk[G.selIdx];
+    const hasBall2=(G.selIdx===G.virtBall);
+    const r2=hasBall2?ballCarrierMoveRange(p.spd):spdToRange(p.spd);
+    if(Math.hypot(cx-p.px,cy-p.py)<=r2){
+      const newZone=posToZone(cx,cy);
+      if(p.screenMode){
+        queueAction({type:'movescreen',playerIdx:G.selIdx,to:newZone,tx:cx,ty:cy});
+      } else {
+        queueAction({type:'move',playerIdx:G.selIdx,to:newZone,tx:cx,ty:cy});
+      }
+    }
+    return;
+  }
+  if(G.awaitDribble&&G.selIdx!==null){
+    const p=G.atk[G.selIdx];
+    const r2=hndToRange(p.hnd);
+    if(Math.hypot(cx-p.px,cy-p.py)<=r2){
+      const newZone=posToZone(cx,cy);
+      queueAction({type:'dribble',playerIdx:G.selIdx,to:newZone,tx:cx,ty:cy});
+    }
+    return;
+  }
+  if(G.awaitPass&&G.selIdx!==null){
+    G.atk.forEach((p2,i2)=>{
+      if(i2===G.selIdx)return;
+      if(Math.hypot(mx-p2.px,my-p2.py)<22)
+        queueAction({type:'pass',playerIdx:G.selIdx,toPlayerIdx:i2,isBounce:G.passIsBounce});
+    });
+    return;
+  }
+
+  // 공격수 선택 (px,py 기준)
+  let hit=false;
+  G.atk.forEach((p,i)=>{
+    if(!hit&&Math.hypot(mx-p.px,my-p.py)<18){selPlayer(i);hit=true;}
+  });
+  if(hit)return;
+
+  // 존 정보 클릭
+  for(const zid in Z){
+    const z=Z[zid];
+    if(Math.hypot(mx-z.x,my-z.y)<30){
+      const pr=SP[z.type];
+      const nearDef=G.def.filter((_,i)=>Math.hypot(z.x-defRenderPos(i).x,z.y-defRenderPos(i).y)<70).length;
+      document.getElementById('zone-info').innerHTML=
+        `<strong style="color:#ffcc44">${z.name}</strong><br>
+         오픈: ${pr.open}% | 근접: ${pr.contest}%<br>
+         밀착: ${pr.tight}% | 인근수비: ${nearDef}명`;
+      break;
+    }
+  }
+});
+
+// ═══════════════════════════════════════════════════════
+// UI
+// ═══════════════════════════════════════════════════════
+function updateHUD(){
+  document.getElementById('h-atk').textContent=G.atkScore;
+  document.getElementById('h-def').textContent=G.defScore;
+  const t=G.atkScore-G.defScore;
+  const te=document.getElementById('h-tot');
+  te.textContent=(t>0?'+':'')+t;te.style.color=t>0?'#44dd77':t<0?'#ff5555':'#ff7700';
+  document.getElementById('h-pos').textContent=`공격 ${G.poss}/5`;
+  const sc=document.getElementById('h-sc');sc.textContent=G.sc;
+  sc.style.color=G.sc<=3?'#ff4444':G.sc<=5?'#ffaa33':'#ff7700';
+  document.getElementById('h-form').textContent=FORMS[G.formation]?.name||'-';
+}
+
+function renderSide(){
+  const pl=document.getElementById('player-list');
+  pl.innerHTML='<h4>공격 선수</h4>';
+  G.atk.forEach((p,i)=>{
+    const act=G.playerActions[i];
+    const isVB=i===G.virtBall;
+    const d=document.createElement('div');
+    d.className='pitem'+(G.selIdx===i?' sel':'')+(act?' planned':'');
+    const smTag=p.screenMode?`<span class="sm-tag">S</span>`:'';
+    d.innerHTML=`<span><span class="pdot" style="background:${p.color}"></span>${p.name}${smTag}<span class="ball-icon">${p.hasBall?'●':isVB&&!p.hasBall?'○':''}</span></span><span style="color:${act?'#ffdd00':'#555'};font-size:0.82em">${act?act.label:Z[p.zone].name}</span>`;
+    d.onclick=()=>selPlayer(i);
+    pl.appendChild(d);
+  });
+
+  const ab=document.getElementById('action-btns');
+  if(G.phase==='EXEC'){ab.innerHTML='<p style="color:#ff9922;font-size:0.82em">▶ 실행 중...</p>';return;}
+  if(G.selIdx===null){ab.innerHTML='<p style="color:#444;font-size:0.75em">선수를 선택하세요</p>';return;}
+  const p=G.atk[G.selIdx];
+  const hasBall=G.selIdx===G.virtBall;
+  const prob=hasBall?calcProb(G.selIdx):0;
+  const pc=probColor(prob);
+  ab.innerHTML='';
+  const dis=G.shootPlanned;
+
+  // 스크린 모드 토글 버튼
+  const smBtn=document.createElement('button');
+  smBtn.className='abtn'+(p.screenMode?' screen-on':'');
+  smBtn.textContent=p.screenMode?'🔶 스크린 모드 ON (토글로 끄기)':'🔲 스크린 모드 OFF (토글로 켜기)';
+  smBtn.onclick=doToggleScreenMode;ab.appendChild(smBtn);
+
+  // 스크린 모드 ON이면 스크린 실행 버튼 표시
+  if(p.screenMode){
+    const scExec=document.createElement('button');
+    scExec.className='abtn screen-exec';
+    scExec.textContent=`▶ 스크린 실행 (SCR ${p.scr}) — 현재 위치에서`;
+    scExec.disabled=dis;scExec.onclick=doScreen;ab.appendChild(scExec);
+  }
+
+  const moveBlocked=hasBall&&defNearBallCarrier(G.selIdx);
+  const moveLbl=p.screenMode?`이동 후 스크린 (SPD ${p.spd})`:moveBlocked?`이동 불가 — 수비 근접`:hasBall?`이동 (SPD ${p.spd}, 볼)`:(`이동 (SPD ${p.spd})`);
+  [
+    [moveLbl, 'doMove()', moveBlocked],
+    [`패스 (PAS ${p.pas})`,          'doPass()',       !hasBall],
+    [`바운스패스 (차단↓)`,            'doPassBounce()', !hasBall],
+    [`드리블 돌파 (HND ${p.hnd})`,   'doDribble()',    !hasBall],
+    [`슛 페이크 (${G.fakeCount}회)`, 'doFake()',       !hasBall],
+  ].forEach(([label,fn,d2])=>{
+    const b=document.createElement('button');b.className='abtn';b.textContent=label;
+    b.disabled=d2||dis;b.onclick=new Function(fn);ab.appendChild(b);
+  });
+  const sb=document.createElement('button');
+  sb.className='abtn shoot';sb.disabled=!hasBall;
+  sb.innerHTML=hasBall?`슛! — ${Z[p.zone].name} <span style="color:${pc};font-weight:bold">${prob}%</span>`:'슛 (공 없음)';
+  sb.onclick=doShoot;ab.appendChild(sb);
+  if(hasBall){
+    const bar=document.createElement('div');bar.className='prob-bar';
+    bar.innerHTML=`<div class="prob-fill" style="width:${prob}%;background:${pc}"></div>`;
+    ab.appendChild(bar);
+  }
+}
+
+function setStatus(msg){document.getElementById('status-bar').textContent=msg;}
+function log(msg,type=''){
+  const el=document.getElementById('log');
+  const d=document.createElement('div');d.className='lg '+type;d.textContent=msg;
+  el.appendChild(d);el.scrollTop=el.scrollHeight;
+  if(el.children.length>100)el.removeChild(el.children[0]);
+}
+
+// ═══════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════
+let _teamEl=null;
+function selectTeam(key,el){
+  G.teamKey=key;if(_teamEl)_teamEl.classList.remove('selected');
+  el.classList.add('selected');_teamEl=el;
+  document.getElementById('start-btn').disabled=false;
+}
+function startGame(){
+  if(!G.teamKey)return;
+  const team=TEAMS[G.teamKey];
+  G.atk=team.players.map((p,i)=>({...p,zone:ATKS[i],px:Z[ATKS[i]].x,py:Z[ATKS[i]].y,hasBall:i===0,screened:false,screenMode:false}));
+  G.atkScore=0;G.defScore=0;G.poss=1;G.sc=10;
+  G.shotHist={};G.fakeCount=0;G.screenBonus=false;G.cutBonus=false;G.screenCount=0;G.manScreenHistory=0;G.activeScreenZones=[];G.passReactFrac=1.0;G.dribbleFailPenalty=false;
+  document.getElementById('log').innerHTML='';
+  document.getElementById('title-screen').classList.remove('active');
+  document.getElementById('game-screen').classList.add('active');
+  log(`팀: ${team.name} — 공격 5포제션 시작!`,'info');
+  startPoss();
+}
+</script>
+</body>
+</html>
